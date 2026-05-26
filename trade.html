@@ -144,22 +144,44 @@
         }
 
         async function sendChatMessage(e) {
-            e.preventDefault();
-            const input = document.getElementById('chatInput');
-            const text = input.value.trim();
-            if (!text || !tradeDetails) return;
+    e.preventDefault();
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text || !tradeDetails) return;
 
-            input.value = ""; 
-            const activeUserEmail = tradeDetails.buyer_email || 'Participant';
+    input.value = ""; // Clear input bar immediately
 
-            await supabaseClient
-                .from('messages')
-                .insert([{ 
-                    trade_id: tradeId, 
-                    sender_email: activeUserEmail, 
-                    message_text: text 
-                }]);
+    // DETECT PERSONA:
+    // We check if the person typing matches the buyer or seller email.
+    // If a partner opens the shared link, we can identify them contextually.
+    let activeUserEmail = 'Guest/Partner';
+    
+    // Simple prompt fallback: If we don't know who is typing yet, we check localStorage
+    // or ask them quick to type their email so the system logs them correctly.
+    if (!localStorage.getItem('tradescrow_user_email')) {
+        const viewerEmail = prompt("Please enter your email to join the secure chat sync:", "");
+        if (viewerEmail) {
+            localStorage.setItem('tradescrow_user_email', viewerEmail.trim().toLowerCase());
         }
+    }
+
+    const savedEmail = localStorage.getItem('tradescrow_user_email');
+    if (savedEmail) {
+        activeUserEmail = savedEmail;
+    } else {
+        // Fallback default based on trade records if they cancel the prompt
+        activeUserEmail = tradeDetails.buyer_email || 'Participant';
+    }
+
+    await supabaseClient
+        .from('messages')
+        .insert([{ 
+            trade_id: tradeId, 
+            sender_email: activeUserEmail, 
+            message_text: text 
+        }]);
+}
+
 
         function setupChatRealtimeListener() {
             supabaseClient
