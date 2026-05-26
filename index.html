@@ -134,6 +134,22 @@ async function handleFormSubmit(e) {
             const newTradeId = data[0].id;
             window.location.href = `trade.html?id=${newTradeId}`;
         }
+        const amountInput = document.getElementById('amount'); // Match your amount input ID
+const feeDisplay = document.getElementById('feeDisplay');
+const totalDisplay = document.getElementById('totalDisplay');
+
+amountInput.addEventListener('input', () => {
+    const amount = parseFloat(amountInput.value) || 0;
+    
+    // Calculate a 2% fee (Change 0.02 to 0.05 if you want a 5% fee instead)
+    const escrowFee = amount * 0.02; 
+    const totalAmount = amount + escrowFee;
+
+    // Display formatted values to the user
+    feeDisplay.innerText = `₦${escrowFee.toLocaleString()}`;
+    totalDisplay.innerText = `₦${totalAmount.toLocaleString()}`;
+});
+        
     </script>
 </body>
 </html>
