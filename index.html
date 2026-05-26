@@ -80,7 +80,7 @@
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        async function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
@@ -92,11 +92,11 @@
     const partnerEmail = document.getElementById('peerContact').value;
     const userRole = document.getElementById('userRole').value;
     
-    // Dynamically assign emails based on selected role
+    // Assign roles dynamically
     const buyerEmail = (userRole === 'buyer') ? myEmail : partnerEmail;
     const sellerEmail = (userRole === 'seller') ? myEmail : partnerEmail;
 
-    // Save deal to Supabase (using your singular table 'trade')
+    // TARGET THE CORRECT SINGULAR TABLE 'trade'
     const { data, error } = await supabaseClient
         .from('trade') 
         .insert([
@@ -121,10 +121,7 @@
     window.location.href = `trade.html?id=${newTradeId}`;
 }
 
-            // Redirect user directly to the live Tracking Deal Room page with the database ID in the link
-            const newTradeId = data[0].id;
-            window.location.href = `trade.html?id=${newTradeId}`;
-        }
+
     </script>
 </body>
 </html>
