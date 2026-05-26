@@ -143,7 +143,7 @@
         }
 
         async function updateTradeStatus(newStatus) {
-            const { error } = await supabaseClient.from('trades').update({ status: newStatus }).eq('id', tradeId);
+            const { error } = await supabaseClient.from('trade').update({ status: newStatus }).eq('id', tradeId);
             if (error) alert("Status adjustment failure: " + error.message);
         }
 
