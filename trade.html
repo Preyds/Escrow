@@ -75,7 +75,7 @@
 
         async function initRoom() {
             // 1. Fetch trade data from Supabase row
-            const { data, error } = await supabaseClient.from('trades').select('*').eq('id', tradeId).single();
+            const { data, error } = await supabaseClient.from('trade').select('*').eq('id', tradeId).single();
             if (error || !data) {
                 alert("Error opening transaction contract details.");
                 return;
