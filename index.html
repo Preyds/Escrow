@@ -80,6 +80,16 @@
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// A completely safe, cross-platform string generator
+function generateSimpleId() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 12; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
 async function handleFormSubmit(e) {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
@@ -95,8 +105,8 @@ async function handleFormSubmit(e) {
     const buyerEmail = (userRole === 'buyer') ? myEmail : partnerEmail;
     const sellerEmail = (userRole === 'seller') ? myEmail : partnerEmail;
 
-    // Generate a fresh random UUID on the front-end so we know the ID instantly
-    const fallbackId = crypto.randomUUID();
+    // Generate a lightweight custom ID that will never block on mobile web views
+    const fallbackId = generateSimpleId();
 
     const { error } = await supabaseClient
         .from('trade') 
@@ -110,6 +120,18 @@ async function handleFormSubmit(e) {
                 seller_email: sellerEmail 
             }
         ]);
+
+    if (error) {
+        alert('Database Error: ' + error.message);
+        btn.disabled = false;
+        btn.innerText = 'Initialize Escrow Deal';
+        return;
+    }
+
+    // Redirect smoothly using our newly generated ID string
+    window.location.href = `trade.html?id=${fallbackId}`;
+}
+
 
     if (error) {
         alert('Database Error: ' + error.message);
