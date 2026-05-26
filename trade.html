@@ -236,53 +236,81 @@
         }
 
         function renderUI(trade) {
-            document.getElementById('lblAsset').innerText = trade.asset_type;
-            document.getElementById('lblAmount').innerText = '₦' + trade.amount.toLocaleString();
-            document.getElementById('lblBuyer').innerText = trade.buyer_email;
-            document.getElementById('lblSeller').innerText = trade.seller_email;
+    document.getElementById('lblAsset').innerText = trade.asset_type;
+    document.getElementById('lblAmount').innerText = '₦' + trade.amount.toLocaleString();
+    document.getElementById('lblBuyer').innerText = trade.buyer_email;
+    document.getElementById('lblSeller').innerText = trade.seller_email;
 
-            const actions = document.getElementById('actionArea');
-            const timerContainer = document.getElementById('timerContainer');
-            actions.innerHTML = ""; 
-            
-            if (timerInterval) clearInterval(timerInterval); 
+    const actions = document.getElementById('actionArea');
+    const timerContainer = document.getElementById('timerContainer');
+    actions.innerHTML = ""; 
+    
+    if (timerInterval) clearInterval(timerInterval); 
 
-            if (trade.status === 'pending') {
-                resetTimelineToPending();
-                timerContainer.classList.add('hidden'); 
-                
-                const baseAmount = parseFloat(trade.amount);
-                const fee = baseAmount * 0.02;
-                const totalWithFee = baseAmount + fee;
-                
-                actions.innerHTML = `<button onclick="processPaystackCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow transition">Deposit Secured Escrow (₦${totalWithFee.toLocaleString()})</button>`;
-            } 
-            else if (trade.status === 'paid') {
-                setTimelineToPaid();
-                timerContainer.classList.remove('hidden');
-                
-                // Uses custom calculation fix format
-                const targetTimestamp = trade.paid_at || trade.created_at;
-                startInspectionCountdown(targetTimestamp);
+    // DETECT VISITOR IDENTITY
+    const viewerEmail = (localStorage.getItem('tradescrow_user_email') || '').trim().toLowerCase();
+    const isBuyer = viewerEmail === trade.buyer_email.toLowerCase();
+    const isSeller = viewerEmail === trade.seller_email.toLowerCase();
 
-                actions.innerHTML = `
-                    <div class="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-xs text-yellow-400 mb-2 font-medium">⚠️ Seller: Send account details via dm now. Buyer: Verify custody before releasing.</div>
-                    <div class="flex gap-3">
-                        <button onclick="updateTradeStatus('released')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow transition text-sm">Release Funds</button>
-                        <button onclick="updateTradeStatus('disputed')" class="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold py-3 px-4 rounded-xl border border-red-500/20 transition text-sm">Raise Dispute</button>
-                    </div>`;
-            } 
-            else if (trade.status === 'released') {
-                setTimelineToSettled();
-                timerContainer.classList.add('hidden'); 
-                actions.innerHTML = `<div class="bg-green-500/10 border border-green-500/20 text-green-400 font-semibold p-4 rounded-xl text-center text-sm">🔒 Transaction fully verified and payouts finalized successfully.</div>`;
-            }
-            else if (trade.status === 'disputed') {
-                setTimelineToDisputed();
-                timerContainer.classList.add('hidden'); 
-                actions.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 font-semibold p-4 rounded-xl text-center text-sm">🛑 Hold Order Placed. System Admin reviewing submitted trade logs.</div>`;
-            }
+    // --- STATUS: PENDING ---
+    if (trade.status === 'pending') {
+        resetTimelineToPending();
+        timerContainer.classList.add('hidden'); 
+        
+        if (isBuyer) {
+            // Buyer perspective: Show payment action button
+            const baseAmount = parseFloat(trade.amount);
+            const fee = baseAmount * 0.02;
+            const totalWithFee = baseAmount + fee;
+            actions.innerHTML = `<button onclick="processPaystackCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow transition">Deposit Secured Escrow (₦${totalWithFee.toLocaleString()})</button>`;
+        } else if (isSeller) {
+            // Seller perspective: Waiting text
+            actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">⏳ Waiting for the buyer (${trade.buyer_email}) to pay the deposit into escrow holding vault. Do not hand over account logs yet.</div>`;
+        } else {
+            // Generic third-party link perspective
+            actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Awaiting payment from buyer...</div>`;
         }
+    } 
+    // --- STATUS: PAID ---
+    else if (trade.status === 'paid') {
+        setTimelineToPaid();
+        timerContainer.classList.remove('hidden');
+        
+        const targetTimestamp = trade.paid_at || trade.created_at;
+        startInspectionCountdown(targetTimestamp);
+
+        if (isBuyer) {
+            // Buyer perspective: Control the money release or dispute trigger
+            actions.innerHTML = `
+                <div class="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-xs text-yellow-400 mb-2 font-medium">⚠️ Check the chat area below. Verify account login custody matches terms before releasing funds.</div>
+                <div class="flex gap-3">
+                    <button onclick="updateTradeStatus('released')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow transition text-sm">Release Funds to Seller</button>
+                    <button onclick="updateTradeStatus('disputed')" class="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold py-3 px-4 rounded-xl border border-red-500/20 transition text-sm">Raise Dispute</button>
+                </div>`;
+        } else if (isSeller) {
+            // Seller perspective: Instructions to deliver inside chat logs
+            actions.innerHTML = `
+                <div class="bg-green-600/10 border border-green-500/20 rounded-xl p-4 text-center text-xs text-green-400 font-medium">
+                    💰 Payment Confirmed inside Escrow! <br>
+                    <span class="text-gray-400 block mt-1">Drop the account email, password, or linking info in the secure chat box below so the buyer can verify it.</span>
+                </div>`;
+        } else {
+            actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Deal is funded. Verification phase active.</div>`;
+        }
+    } 
+    // --- STATUS: RELEASED ---
+    else if (trade.status === 'released') {
+        setTimelineToSettled();
+        timerContainer.classList.add('hidden'); 
+        actions.innerHTML = `<div class="bg-green-500/10 border border-green-500/20 text-green-400 font-semibold p-4 rounded-xl text-center text-sm">🔒 Transaction fully verified and payouts finalized successfully.</div>`;
+    }
+    // --- STATUS: DISPUTED ---
+    else if (trade.status === 'disputed') {
+        setTimelineToDisputed();
+        timerContainer.classList.add('hidden'); 
+        actions.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 font-semibold p-4 rounded-xl text-center text-sm">🛑 Hold Order Placed. System Admin reviewing submitted trade logs.</div>`;
+    }
+}
 
         function startInspectionCountdown(createdAtTimestamp) {
             const clockDisplay = document.getElementById('countdownClock');
