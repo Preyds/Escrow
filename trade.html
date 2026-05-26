@@ -80,15 +80,38 @@
             initRoom();
         }
 
-        async function initRoom() {
-            // 1. Fetch trade data from Supabase row
-            const { data, error } = await supabaseClient.from('trade').select('*').eq('id', tradeId).single();
-            if (error || !data) {
-                alert("Error opening transaction contract details.");
-                return;
-            }
-            tradeDetails = data;
-            renderUI(tradeDetails);
+        async function loadTradeRoom() {
+    // 1. Get the ID from the URL string
+    const urlParams = new URLSearchParams(window.location.search);
+    const tradeId = urlParams.get('id');
+
+    if (!tradeId) {
+        alert("No contract ID provided.");
+        return;
+    }
+
+    // 2. Fetch the contract details from your singular table 'trade'
+    const { data, error } = await supabaseClient
+        .from('trade')
+        .select('*')
+        .eq('id', tradeId)
+        .single(); // Use .single() to fetch just this row object
+
+    if (error || !data) {
+        console.error("Error loading contract row:", error);
+        return;
+    }
+
+    // 3. Save to global variable and render
+    tradeDetails = data;
+    
+    // Explicitly pass the database timestamp column right here!
+    renderUI(tradeDetails); 
+}
+
+// Make sure your load function fires immediately when the page turns on
+loadTradeRoom();
+
 
             // 2. Open Realtime Live Web Socket Listening Pipeline
             document.getElementById('liveBadge').className = "text-xs bg-green-500/10 text-green-400 font-bold px-2.5 py-1 rounded-full border border-green-500/20";
