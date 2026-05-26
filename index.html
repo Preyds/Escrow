@@ -64,31 +64,33 @@
                         <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Partner's Email</label>
                         <input id="peerContact" type="email" required placeholder="trader@mail.com" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition">
                     </div>
-                    <div class="space-y-3 border-t border-gray-700 pt-4 mt-4">
-    <h4 class="text-xs font-bold text-yellow-500 uppercase tracking-wider">Seller Payout Destination</h4>
-    
-    <div>
-        <label class="block text-xs text-gray-400 mb-1">Seller's Bank</label>
-        <select id="bankCode" required class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-yellow-500">
-            <option value="011">First Bank of Nigeria</option>
-            <option value="058">GTBank</option>
-            <option value="033">United Bank for Africa (UBA)</option>
-            <option value="011">Zenith Bank</option>
-            <option value="044">Access Bank</option>
-            <option value="070">Wema Bank</option>
-            <option value="305">OPay</option>
-            <option value="50211">Kuda Bank</option>
-            <option value="101">Provadus Bank</option>
-        </select>
-    </div>
+                </div>
 
-    <div>
-        <label class="block text-xs text-gray-400 mb-1">Seller's Account Number</label>
-        <input id="accNumber" type="text" maxlength="10" required placeholder="0123456789" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-yellow-500">
-    </div>
+                <div class="space-y-3 border-t border-gray-700 pt-5 mt-4">
+                    <h4 class="text-xs font-bold text-yellow-500 uppercase tracking-wider">Seller Payout Destination</h4>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Seller's Bank</label>
+                        <select id="bankCode" required class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-yellow-500 transition">
+                            <option value="058">GTBank</option>
+                            <option value="011">First Bank of Nigeria</option>
+                            <option value="033">United Bank for Africa (UBA)</option>
+                            <option value="057">Zenith Bank</option>
+                            <option value="044">Access Bank</option>
+                            <option value="070">Wema Bank</option>
+                            <option value="305">OPay</option>
+                            <option value="50211">Kuda Bank</option>
+                            <option value="101">Provadus Bank</option>
+                        </select>
                     </div>
-       </div>
-                <button id="submitBtn" type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-3.5 px-4 rounded-xl shadow-lg transform active:scale-95 transition duration-150 mt-4 flex justify-center items-center gap-2">
+
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Seller's Account Number</label>
+                        <input id="accNumber" type="text" maxlength="10" required placeholder="0123456789" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-yellow-500 transition">
+                    </div>
+                </div>
+
+                <button id="submitBtn" type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-3.5 px-4 rounded-xl shadow-lg transform active:scale-95 transition duration-150 mt-6 flex justify-center items-center gap-2">
                     Initialize Escrow Deal
                 </button>
             </form>
@@ -101,7 +103,6 @@
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Core dynamic fee display calculations (Fixed target to use 'tradeAmount')
         const amountInput = document.getElementById('tradeAmount'); 
         const feeDisplay = document.getElementById('feeDisplay');
         const totalDisplay = document.getElementById('totalDisplay');
@@ -115,7 +116,6 @@
             totalDisplay.innerText = `₦${totalAmount.toLocaleString()}`;
         });
 
-        // Form submission database ingestion processing logic
         async function handleFormSubmit(e) {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
@@ -128,10 +128,14 @@
             const peerEmail = document.getElementById('peerContact').value;
             const userRole = document.getElementById('userRole').value;
             
-            // Fixed: Assign typed input values contextually instead of generic system accounts
+            // Read new banking data selections
+            const bankCodeValue = document.getElementById('bankCode').value;
+            const accountNumberValue = document.getElementById('accNumber').value;
+            
             const buyerEmail = (userRole === 'buyer') ? userEmail : peerEmail;
             const sellerEmail = (userRole === 'seller') ? userEmail : peerEmail;
 
+            // Updated Database Payload Insertion array
             const { data, error } = await supabaseClient
                 .from('trade')
                 .insert([
@@ -140,7 +144,10 @@
                         amount: amount, 
                         status: 'pending', 
                         buyer_email: buyerEmail, 
-                        seller_email: sellerEmail 
+                        seller_email: sellerEmail,
+                        seller_bank_code: bankCodeValue,
+                        seller_account_number: accountNumberValue,
+                        seller_account_name: 'Pending Verification'
                     }
                 ])
                 .select();
@@ -153,10 +160,10 @@
             }
 
             const newTradeId = data[0].id;
-            // Save the creator's email locally so the chat box knows who they are automatically
-localStorage.setItem('tradescrow_user_email', userEmail.trim().toLowerCase());
+            localStorage.setItem('tradescrow_user_email', userEmail.trim().toLowerCase());
             window.location.href = `trade.html?id=${newTradeId}`;
         }
     </script>
 </body>
-</html>
+    </html>
+    
