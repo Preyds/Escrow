@@ -86,7 +86,7 @@
 
             // Save deal to Supabase
             const { data, error } = await supabaseClient
-                .from('trades')
+                .from('trade')
                 .insert([
                     { 
                         asset_type: asset, 
