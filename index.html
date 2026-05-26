@@ -91,65 +91,44 @@ function generateSimpleId() {
 }
 
 async function handleFormSubmit(e) {
-    e.preventDefault();
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = true;
-    btn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Creating Contract...`;
-    
-    const asset = document.getElementById('assetType').value;
-    const amount = parseInt(document.getElementById('tradeAmount').value);
-    const myEmail = document.getElementById('userEmail').value;
-    const partnerEmail = document.getElementById('peerContact').value;
-    const userRole = document.getElementById('userRole').value;
-    
-    const buyerEmail = (userRole === 'buyer') ? myEmail : partnerEmail;
-    const sellerEmail = (userRole === 'seller') ? myEmail : partnerEmail;
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Creating Contract...`;
+            
+            const asset = document.getElementById('assetType').value;
+            const amount = parseInt(document.getElementById('tradeAmount').value);
+            const peerEmail = document.getElementById('peerContact').value;
+            const userRole = document.getElementById('userRole').value;
+            
+            const buyerEmail = (userRole === 'buyer') ? 'admin@tradescrow.com' : peerEmail;
+            const sellerEmail = (userRole === 'seller') ? 'admin@tradescrow.com' : peerEmail;
 
-    // Generate a lightweight custom ID that will never block on mobile web views
-    const fallbackId = generateSimpleId();
+            // Save deal to Supabase
+            const { data, error } = await supabaseClient
+                .from('trades')
+                .insert([
+                    { 
+                        asset_type: asset, 
+                        amount: amount, 
+                        status: 'pending', 
+                        buyer_email: buyerEmail, 
+                        seller_email: sellerEmail 
+                    }
+                ])
+                .select();
 
-    const { error } = await supabaseClient
-        .from('trade') 
-        .insert([
-            { 
-                id: fallbackId,
-                asset_type: asset, 
-                amount: amount, 
-                status: 'pending', 
-                buyer_email: buyerEmail, 
-                seller_email: sellerEmail 
+            if (error) {
+                alert('Database Error: ' + error.message);
+                btn.disabled = false;
+                btn.innerText = 'Initialize Escrow Deal';
+                return;
             }
-        ]);
 
-    if (error) {
-        alert('Database Error: ' + error.message);
-        btn.disabled = false;
-        btn.innerText = 'Initialize Escrow Deal';
-        return;
-    }
-
-    // Redirect smoothly using our newly generated ID string
-    window.location.href = `trade.html?id=${fallbackId}`;
-}
-
-
-    if (error) {
-        alert('Database Error: ' + error.message);
-        btn.disabled = false;
-        btn.innerText = 'Initialize Escrow Deal';
-        return;
-    }
-
-    // Direct routing using the exact ID we just pushed
-    window.location.href = `trade.html?id=${fallbackId}`;
-}
-
-
-    const newTradeId = data[0].id;
-    window.location.href = `trade.html?id=${newTradeId}`;
-}
-
-
+            // Redirect user directly to the live Tracking Deal Room page with the database ID in the link
+            const newTradeId = data[0].id;
+            window.location.href = `trade.html?id=${newTradeId}`;
+        }
     </script>
 </body>
 </html>
