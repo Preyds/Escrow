@@ -201,23 +201,34 @@
             timerInterval = setInterval(updateClock, 1000); 
         }
 
-        function processPaystackCheckout() {
-            let handler = PaystackPop.setup({
-                key: PAYSTACK_KEY,
-                email: tradeDetails.buyer_email, 
-                amount: tradeDetails.amount * 100,
-                currency: 'NGN',
-                callback: function(res) {
-                    updateTradeStatus('paid');
-                }
-            });
-            handler.openIframe();
-        }
+        function payWithPaystack() {
+    // 1. Grab the base contract amount stored in your Supabase 'trade' row data object
+    // (Assuming 'currentTradeData' holds the active database row from your listener)
+    const baseAmount = parseFloat(currentTradeData.amount); 
+    
+    // 2. Re-calculate the exact 2% platform fee matching index.html
+    const platformFee = baseAmount * 0.02;
+    const finalBillableAmount = baseAmount + platformFee;
 
-        async function updateTradeStatus(newStatus) {
-            const { error } = await supabaseClient.from('trade').update({ status: newStatus }).eq('id', tradeId);
-            if (error) alert("Status adjustment failure: " + error.message);
+    // 3. Paystack processes in Kobo, so multiply the grand total by 100
+    const totalInKobo = Math.round(finalBillableAmount * 100);
+
+    let handler = PaystackPop.setup({
+        key: 'pk_test_your_public_key_here', // Your Paystack Public Key
+        email: currentTradeData.buyer_email,
+        amount: totalInKobo, // Charges Amount + Fee perfectly
+        currency: 'NGN',
+        ref: 'T' + Math.floor((Math.random() * 1000000000) + 1),
+        callback: function(response) {
+            // Payment success script runs here to change status to 'paid'
+            updateTradeStatusToPaid(response.reference);
+        },
+        onClose: function() {
+            alert('Transaction window closed before deposition was complete.');
         }
+    });
+    handler.openIframe();
+}
 
         function resetTimelineToPending() {
             document.getElementById('dotPaid').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-gray-700 border-4 border-gray-800";
