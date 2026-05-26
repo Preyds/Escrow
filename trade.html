@@ -152,9 +152,18 @@ function renderUI(trade) {
 // Function to calculate and run the countdown clock
 function startInspectionCountdown(createdAtTimestamp) {
     const clockDisplay = document.getElementById('countdownClock');
-    const creationTime = new Date(createdAtTimestamp).getTime();
     
-    // Set deadline to exactly 24 Hours after creation (24 * 60 * 60 * 1000 milliseconds)
+    // FIX FOR MOBILE: Convert standard ISO timestamp to a universally cross-browser safe format
+    // This replaces 'T' with a space and strips out timezone text that breaks mobile rendering
+    let safeDateTimeString = createdAtTimestamp.replace('T', ' ').replace(/\..+/, '');
+    
+    // On some older Android engines, replacing dashes with slashes makes it 100% stable
+    safeDateTimeString = safeDateTimeString.replace(/-/g, '/');
+    
+    // Add ' UTC' to ensure the browser converts it properly from database universal time
+    const creationTime = new Date(safeDateTimeString + ' UTC').getTime();
+    
+    // Set deadline to exactly 24 Hours after creation
     const inspectionDeadline = creationTime + (24 * 60 * 60 * 1000);
 
     function updateClock() {
@@ -172,7 +181,6 @@ function startInspectionCountdown(createdAtTimestamp) {
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-        // Format numbers to always have two digits (e.g., 05:09:02)
         clockDisplay.innerText = 
             String(hours).padStart(2, '0') + ":" + 
             String(minutes).padStart(2, '0') + ":" + 
@@ -182,7 +190,6 @@ function startInspectionCountdown(createdAtTimestamp) {
     updateClock(); // Run immediately first
     timerInterval = setInterval(updateClock, 1000); // Tick every second
 }
-
 
         function processPaystackCheckout() {
     let handler = PaystackPop.setup({
