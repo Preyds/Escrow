@@ -131,6 +131,8 @@
             }
 
             const newTradeId = data[0].id;
+            // Save the creator's email locally so the chat box knows who they are automatically
+localStorage.setItem('tradescrow_user_email', userEmail.trim().toLowerCase());
             window.location.href = `trade.html?id=${newTradeId}`;
         }
     </script>
