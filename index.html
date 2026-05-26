@@ -126,56 +126,68 @@
 
     <!-- Simple Script to Power UI Simulation Logic -->
     <script>
-        function handleFormSubmit(e) {
-            e.preventDefault();
+    // Replace this with your actual Paystack Public Key from your dashboard settings
+const PAYSTACK_PUBLIC_KEY = 'pk_test_your_actual_public_key_here'; 
+
+function handleFormSubmit(e) {
+    e.preventDefault();
+    
+    // 1. Gather all data inputs from your form
+    const asset = document.getElementById('assetType').value;
+    const amount = parseFloat(document.getElementById('tradeAmount').value);
+    const peerEmail = document.getElementById('peerContact').value;
+    const userRole = document.getElementById('userRole').value;
+
+    // For testing purposes, we use a placeholder buyer email if you are the seller
+    const buyerEmail = (userRole === 'buyer') ? 'your-email@domain.com' : peerEmail;
+
+    // 2. Open the real Paystack payment gateway window
+    let handler = PaystackPop.setup({
+        key: PAYSTACK_PUBLIC_KEY,
+        email: buyerEmail,
+        amount: amount * 100, // Paystack reads currency in Kobo (e.g., 5000 NGN = 500000 Kobo)
+        currency: 'NGN',
+        callback: function(response) {
+            // This blocks runs automatically AFTER the buyer successfully pays
+            alert('Payment Secured! Reference ID: ' + response.reference);
             
-            // Extract UI inputs
-            const asset = document.getElementById('assetType').value;
-            const amount = parseFloat(document.getElementById('tradeAmount').value);
-            const peer = document.getElementById('peerContact').value;
-            
-            // Populate output container fields
+            // Populate and show your live contract simulation panel
             document.getElementById('summaryAsset').innerText = asset.toUpperCase();
             document.getElementById('summaryAmount').innerText = '₦' + amount.toLocaleString();
-            document.getElementById('summaryPeer').innerText = peer;
+            document.getElementById('summaryPeer').innerText = peerEmail;
             document.getElementById('summaryFee').innerText = '₦' + (amount * 0.02).toLocaleString();
-
-            // Unhide transaction tracker dashboard panel
+            
             document.getElementById('liveStatusCard').classList.remove('hidden');
-            
-            // Reset workflow visual states back to baseline initial setup
-            document.getElementById('dot2').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-gray-700 border-4 border-gray-800";
-            document.getElementById('text2').className = "font-semibold text-gray-500";
-            document.getElementById('text2').innerText = "Awaiting Buyer's Safe Deposit";
-            document.getElementById('payBtn').disabled = false;
-            document.getElementById('payBtn').className = "flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg text-xs transition";
-            document.getElementById('releaseBtn').disabled = true;
-            document.getElementById('releaseBtn').className = "flex-1 bg-gray-700 text-gray-500 font-bold py-2 px-3 rounded-lg text-xs cursor-not-allowed";
+            simulatePayment(); // Triggers your escrow holding state visualizer
+        },
+        onClose: function() {
+            alert('Transaction cancelled. Escrow contract initialization failed.');
         }
+    });
 
-        function simulatePayment() {
-            // Move tracking node into active holding state 
-            document.getElementById('dot2').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-yellow-500 border-4 border-gray-800 animate-pulse";
-            document.getElementById('text2').className = "font-semibold text-yellow-500";
-            document.getElementById('text2').innerText = "Funds Held in Escrow Safebox. Seller can now hand over credentials.";
-            
-            // Toggle controller states
-            document.getElementById('payBtn').disabled = true;
-            document.getElementById('payBtn').className = "flex-1 bg-gray-700 text-gray-500 font-bold py-2 px-3 rounded-lg text-xs cursor-not-allowed";
-            document.getElementById('releaseBtn').disabled = false;
-            document.getElementById('releaseBtn').className = "flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg text-xs transition";
-        }
+    handler.openIframe();
+}
 
-        function simulateRelease() {
-            // Finish final step processing
-            document.getElementById('dot2').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-500 border-4 border-gray-800";
-            document.getElementById('text2').className = "font-semibold text-green-400";
-            document.getElementById('text2').innerText = "Transaction Complete. Payout processed successfully to Seller.";
-            
-            // Block all actions until standard refresh cycles or form re-submissions
-            document.getElementById('releaseBtn').disabled = true;
-            document.getElementById('releaseBtn').className = "flex-1 bg-gray-700 text-gray-500 font-bold py-2 px-3 rounded-lg text-xs cursor-not-allowed";
-        }
+function simulatePayment() {
+    document.getElementById('dot2').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-yellow-500 border-4 border-gray-800 animate-pulse";
+    document.getElementById('text2').className = "font-semibold text-yellow-500";
+    document.getElementById('text2').innerText = "Funds Held in Escrow Safebox. Seller can now hand over credentials.";
+    
+    document.getElementById('payBtn').disabled = true;
+    document.getElementById('payBtn').className = "flex-1 bg-gray-700 text-gray-500 font-bold py-2 px-3 rounded-lg text-xs cursor-not-allowed";
+    document.getElementById('releaseBtn').disabled = false;
+    document.getElementById('releaseBtn').className = "flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg text-xs transition";
+}
+
+function simulateRelease() {
+    document.getElementById('dot2').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-500 border-4 border-gray-800";
+    document.getElementById('text2').className = "font-semibold text-green-400";
+    document.getElementById('text2').innerText = "Transaction Complete. Payout processed successfully to Seller.";
+    
+    document.getElementById('releaseBtn').disabled = true;
+    document.getElementById('releaseBtn').className = "flex-1 bg-gray-700 text-gray-500 font-bold py-2 px-3 rounded-lg text-xs cursor-not-allowed";
+}
+        
     </script>
 </body>
                                                                      </html>
