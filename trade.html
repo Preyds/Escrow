@@ -85,32 +85,39 @@ async function loadTradeRoom() {
     const tradeId = urlParams.get('id');
 
     if (!tradeId) {
-        alert("No contract ID provided.");
+        alert("No contract ID provided in URL.");
         return;
     }
 
-    // Fetch the data from your singular table 'trade'
+    console.log("Fetching record for ID:", tradeId);
+
     const { data, error } = await supabaseClient
         .from('trade')
         .select('*')
-        .eq('id', tradeId)
-        .single(); 
+        .eq('id', tradeId);
 
-    if (error || !data) {
-        console.error("Error loading contract row:", error);
-        document.getElementById('actionArea').innerText = "Failed to load trade data.";
+    if (error) {
+        console.error("Supabase Database Error:", error.message);
+        document.getElementById('actionArea').innerText = "Database connection error.";
         return;
     }
 
-    // Save the fetched row data into your global variable
-    tradeDetails = data;
+    if (!data || data.length === 0) {
+        console.error("No record found matching ID:", tradeId);
+        document.getElementById('actionArea').innerText = "Contract room not found or restricted.";
+        return;
+    }
+
+    // Assign the clear row object to your global state
+    tradeDetails = data[0];
     
-    // Render the layout cleanly using the verified database row data
+    // Fire the UI builder
     renderUI(tradeDetails); 
 }
 
-// Make sure it runs when the screen boots up
+// Kickstart loading process immediately
 loadTradeRoom();
+
 
             // 2. Open Realtime Live Web Socket Listening Pipeline
             document.getElementById('liveBadge').className = "text-xs bg-green-500/10 text-green-400 font-bold px-2.5 py-1 rounded-full border border-green-500/20";
