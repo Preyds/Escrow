@@ -157,20 +157,25 @@ function renderUI(trade) {
         timerContainer.classList.add('hidden'); // Hide timer before payment
         actions.innerHTML = `<button onclick="processPaystackCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow transition">Deposit Secured Escrow Payment</button>`;
     } 
-    else if (trade.status === 'paid') {
+        else if (trade.status === 'paid') {
         setTimelineToPaid();
         
-        // Show and start the 24-hour countdown from the moment the trade was created
+        // Show the timer container
         timerContainer.classList.remove('hidden');
-        startInspectionCountdown(trade.created_at);
+        
+        // Safe check: If a refresh happened and created_at exists, use it.
+        // Otherwise, fall back to right now so the app never freezes up!
+        const targetTimestamp = trade.created_at || null;
+        startInspectionCountdown(targetTimestamp);
 
         actions.innerHTML = `
             <div class="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-xs text-yellow-400 mb-2 font-medium">⚠️ Seller: Send account details via dm now. Buyer: Verify custody before releasing.</div>
             <div class="flex gap-3">
                 <button onclick="updateTradeStatus('released')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow transition text-sm">Release Funds</button>
                 <button onclick="updateTradeStatus('disputed')" class="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold py-3 px-4 rounded-xl border border-red-500/20 transition text-sm">Raise Dispute</button>
-                    </div>`;
-            } 
+            </div>`;
+    } 
+
     else if (trade.status === 'released') {
         setTimelineToSettled();
         timerContainer.classList.add('hidden'); // Hide timer when settled
