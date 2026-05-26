@@ -92,23 +92,24 @@ async function handleFormSubmit(e) {
     const partnerEmail = document.getElementById('peerContact').value;
     const userRole = document.getElementById('userRole').value;
     
-    // Assign roles dynamically
     const buyerEmail = (userRole === 'buyer') ? myEmail : partnerEmail;
     const sellerEmail = (userRole === 'seller') ? myEmail : partnerEmail;
 
-    // TARGET THE CORRECT SINGULAR TABLE 'trade'
-    const { data, error } = await supabaseClient
+    // Generate a fresh random UUID on the front-end so we know the ID instantly
+    const fallbackId = crypto.randomUUID();
+
+    const { error } = await supabaseClient
         .from('trade') 
         .insert([
             { 
+                id: fallbackId,
                 asset_type: asset, 
                 amount: amount, 
                 status: 'pending', 
                 buyer_email: buyerEmail, 
                 seller_email: sellerEmail 
             }
-        ])
-        .select();
+        ]);
 
     if (error) {
         alert('Database Error: ' + error.message);
@@ -116,6 +117,11 @@ async function handleFormSubmit(e) {
         btn.innerText = 'Initialize Escrow Deal';
         return;
     }
+
+    // Direct routing using the exact ID we just pushed
+    window.location.href = `trade.html?id=${fallbackId}`;
+}
+
 
     const newTradeId = data[0].id;
     window.location.href = `trade.html?id=${newTradeId}`;
