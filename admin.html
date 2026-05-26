@@ -3,132 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tradescrow - Admin Resolution Desk</title>
+    <title>Tradescrow - Admin Arbitration Desk</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen pb-12">
 
-    <nav class="bg-gray-800 border-b border-gray-700 p-4 shadow-md">
-        <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold text-red-500">🛡️ Tradescrow Support Desk</h1>
-            <span class="text-xs bg-red-500/10 text-red-400 font-bold px-3 py-1 rounded-full border border-red-500/20">
-                Admin Mode
-            </span>
+    <nav class="bg-gray-800 border-b border-gray-700 p-4 mb-8">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-red-500">🛡️ Tradescrow Arbitration Desk</h1>
+            <span class="text-xs bg-red-500/10 text-red-400 font-mono px-3 py-1 rounded-full border border-red-500/20">Secure Control Node</span>
         </div>
     </nav>
 
-    <main class="max-w-4xl mx-auto px-4 mt-8">
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h2 class="text-xl font-bold text-gray-200">Active Escalations</h2>
-                <p class="text-xs text-gray-400">Review, release, or refund contested peer-to-peer operations.</p>
+    <main class="max-w-5xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-xl h-[70vh] flex flex-col">
+            <h3 class="text-sm font-bold text-gray-300 mb-3 border-b border-gray-700 pb-2">⚠️ Disputed Escrow Queue</h3>
+            <div id="disputeQueue" class="space-y-2 overflow-y-auto flex-1 text-xs">
+                <p class="text-gray-500 text-center py-8">Loading problem tickets...</p>
             </div>
-            <button onclick="fetchEscrowDeals()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold py-2 px-3 rounded-lg border border-gray-700 transition">
-                🔄 Refresh Queue
-            </button>
         </div>
 
-        <div id="adminQueue" class="space-y-4">
-            <div class="p-8 text-center text-sm text-gray-500 bg-gray-800 rounded-2xl border border-gray-700 shadow-xl">
-                <span class="animate-pulse block mb-1">🔍 Querying secure registry logs...</span>
+        <div id="arbitrationPanel" class="md:col-span-2 bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl hidden">
+            <div class="flex justify-between items-start border-b border-gray-700 pb-4 mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">Deal Case: <span id="caseId" class="text-yellow-500 font-mono text-xs">...</span></h2>
+                    <p class="text-xs text-gray-400 mt-1">Asset: <span id="caseAsset" class="text-gray-200 font-medium">...</span> | Value: <span id="caseAmount" class="text-green-400 font-bold">...</span></p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="resolveCase('released')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded-xl transition">Payout Seller</button>
+                    <button onclick="resolveCase('pending')" class="bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-bold py-2 px-3 rounded-xl transition">Refund Buyer</button>
+                </div>
             </div>
+
+            <div class="grid grid-cols-2 gap-4 text-xs bg-gray-950 p-3 rounded-xl border border-gray-800 mb-6">
+                <div><span class="text-gray-500 block">Buyer Participant:</span> <span id="caseBuyer" class="text-gray-300 font-mono">...</span></div>
+                <div><span class="text-gray-500 block">Seller Participant:</span> <span id="caseSeller" class="text-gray-300 font-mono">...</span></div>
+            </div>
+
+            <h4 class="text-xs font-bold text-gray-400 mb-2">📜 Intercepted Room Chat Logs</h4>
+            <div id="caseChatLogs" class="bg-gray-950 border border-gray-900 rounded-xl p-4 h-64 overflow-y-auto space-y-3 text-[11px] font-sans">
+                </div>
         </div>
+
+        <div id="emptyPanel" class="md:col-span-2 bg-gray-800 border border-gray-700 border-dashed rounded-2xl flex flex-col items-center justify-center p-12 text-center text-gray-500">
+            <span>🔍 Select a disputed ticket contract file from the queue column to intercept logs and arbitrate payouts.</span>
+        </div>
+
     </main>
 
     <script>
-        // Platform Configuration Constants
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
-        
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Fetch disputed and paid rows from the database
-        async function fetchEscrowDeals() {
-            const container = document.getElementById('adminQueue');
-            
+        let selectedTradeId = null;
+
+        async function fetchDisputes() {
             const { data, error } = await supabaseClient
                 .from('trade')
                 .select('*')
-                .in('status', ['disputed', 'paid'])
-                .order('status', { ascending: false }); // Puts disputes right at the top
+                .eq('status', 'disputed')
+                .order('created_at', { ascending: false });
 
-            if (error) {
-                container.innerHTML = `
-                    <div class="p-6 bg-red-950/20 border border-red-500/20 rounded-xl text-center text-sm text-red-400">
-                        Error fetching logs: ${error.message}
-                    </div>`;
-                return;
-            }
+            const queue = document.getElementById('disputeQueue');
+            queue.innerHTML = "";
 
             if (!data || data.length === 0) {
-                container.innerHTML = `
-                    <div class="p-8 text-center text-sm text-gray-500 bg-gray-800 rounded-2xl border border-gray-700">
-                        🎉 Clean slate! No active disputes or pending hold orders found.
-                    </div>`;
+                queue.innerHTML = `<p class="text-gray-600 text-center py-8">All clean! No active disputes found.</p>`;
                 return;
             }
 
-            container.innerHTML = ""; // Clear loader element
-
-            // Map rows dynamically into UI cards
-            data.forEach(deal => {
-                const isDisputed = deal.status === 'disputed';
-                const statusBadgeColor = isDisputed ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
-                
-                const card = document.createElement('div');
-                card.className = "bg-gray-800 border border-gray-700 rounded-2xl p-5 shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition hover:border-gray-600";
-                
-                card.innerHTML = `
-                    <div class="space-y-2 flex-1 w-full">
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded border ${statusBadgeColor} uppercase">
-                                ${deal.status}
-                            </span>
-                            <span class="text-xs text-gray-500 font-mono">ID: ${deal.id}</span>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:text-sm pt-1">
-                            <div><span class="text-gray-500">Asset:</span> <span class="text-white font-medium">${deal.asset_type}</span></div>
-                            <div><span class="text-gray-500">Value:</span> <span class="text-green-400 font-bold">₦${deal.amount.toLocaleString()}</span></div>
-                            <div class="col-span-2 mt-1 break-all"><span class="text-gray-500">Buyer:</span> <span class="text-gray-300">${deal.buyer_email}</span></div>
-                            <div class="col-span-2 break-all"><span class="text-gray-500">Seller:</span> <span class="text-gray-300">${deal.seller_email}</span></div>
-                        </div>
+            data.forEach(trade => {
+                const item = document.createElement('div');
+                item.className = `p-3 bg-gray-950 rounded-xl border border-gray-850 hover:border-red-500/40 cursor-pointer transition ${selectedTradeId === trade.id ? 'border-red-500/60 bg-red-500/5' : ''}`;
+                item.onclick = () => loadCaseFile(trade);
+                item.innerHTML = `
+                    <div class="flex justify-between font-bold text-gray-300 mb-1">
+                        <span>${trade.asset_type}</span>
+                        <span class="text-green-400">₦${trade.amount.toLocaleString()}</span>
                     </div>
-                    
-                    <div class="flex md:flex-col gap-2 w-full md:w-auto pt-2 md:pt-0 border-t border-gray-700 md:border-none">
-                        <button onclick="resolveEscrow('${deal.id}', 'released')" class="flex-1 md:w-44 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow shadow-blue-900/40">
-                            Force Release Payout
-                        </button>
-                        <button onclick="resolveEscrow('${deal.id}', 'pending')" class="flex-1 md:w-44 bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold py-2.5 px-4 rounded-xl text-xs border border-gray-600 transition">
-                            Revert to Pending / Refund
-                        </button>
-                    </div>
+                    <p class="text-[10px] text-gray-500 truncate">ID: ${trade.id}</p>
                 `;
-                container.appendChild(card);
+                queue.appendChild(item);
             });
         }
 
-        // Handle Database Update State Shifts directly
-        async function resolveEscrow(targetId, targetStatus) {
-            const confirmationMessage = `Are you absolutely sure you want to force this contract to status: "${targetStatus}"? This change live updates the trade room instantly.`;
-            if (!confirm(confirmationMessage)) return;
+        async function loadCaseFile(trade) {
+            selectedTradeId = trade.id;
+            document.getElementById('emptyPanel').classList.add('hidden');
+            document.getElementById('arbitrationPanel').classList.remove('hidden');
+
+            document.getElementById('caseId').innerText = trade.id;
+            document.getElementById('caseAsset').innerText = trade.asset_type;
+            document.getElementById('caseAmount').innerText = '₦' + trade.amount.toLocaleString();
+            document.getElementById('caseBuyer').innerText = trade.buyer_email;
+            document.getElementById('caseSeller').innerText = trade.seller_email;
+
+            // Load chat logs to catch who dropped the password or who is lying
+            const { data: messages } = await supabaseClient
+                .from('messages')
+                .select('*')
+                .eq('trade_id', trade.id)
+                .order('created_at', { ascending: true });
+
+            const logsContainer = document.getElementById('caseChatLogs');
+            logsContainer.innerHTML = "";
+
+            if (!messages || messages.length === 0) {
+                logsContainer.innerHTML = `<p class="text-gray-600 text-center py-8">No conversation occurred inside this room.</p>`;
+            } else {
+                messages.forEach(msg => {
+                    const line = document.createElement('div');
+                    line.className = "p-2 bg-gray-900 rounded border border-gray-850";
+                    line.innerHTML = `<strong>[${msg.sender_email}]:</strong> <span class="text-gray-300">${msg.message_text}</span>`;
+                    logsContainer.appendChild(line);
+                });
+            }
+            fetchDisputes(); // refresh styling highlights
+        }
+
+        async function resolveCase(finalTargetStatus) {
+            if (!selectedTradeId) return;
+            
+            const confirmation = confirm(`Are you sure you want to force set this contract state to [${finalTargetStatus}]? This action modifies the escrow vault distribution directly!`);
+            if (!confirmation) return;
 
             const { error } = await supabaseClient
                 .from('trade')
-                .update({ status: targetStatus })
-                .eq('id', targetId);
+                .update({ status: finalTargetStatus })
+                .eq('id', selectedTradeId);
 
             if (error) {
-                alert("Database arbitration error: " + error.message);
+                alert("Override failed: " + error.message);
             } else {
-                alert("Contract status updated successfully!");
-                fetchEscrowDeals(); // Refresh dashboard listing
+                alert(`Case successfully closed. Contract state overridden to: ${finalTargetStatus}`);
+                document.getElementById('arbitrationPanel').classList.add('hidden');
+                document.getElementById('emptyPanel').classList.remove('hidden');
+                selectedTradeId = null;
+                fetchDisputes();
             }
         }
 
-        // Auto-run when admin portal launches
-        fetchEscrowDeals();
+        // Initialize queue and pull live data changes
+        fetchDisputes();
+        supabaseClient.channel('admin-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'trade' }, () => fetchDisputes()).subscribe();
     </script>
 </body>
 </html>
