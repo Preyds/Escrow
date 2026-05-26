@@ -80,8 +80,7 @@
             initRoom();
         }
 
-        async function loadTradeRoom() {
-    // 1. Get the ID from the URL string
+async function loadTradeRoom() {
     const urlParams = new URLSearchParams(window.location.search);
     const tradeId = urlParams.get('id');
 
@@ -90,17 +89,29 @@
         return;
     }
 
-    // 2. Fetch the contract details from your singular table 'trade'
+    // Fetch the data from your singular table 'trade'
     const { data, error } = await supabaseClient
         .from('trade')
         .select('*')
         .eq('id', tradeId)
-        .single(); // Use .single() to fetch just this row object
+        .single(); 
 
     if (error || !data) {
         console.error("Error loading contract row:", error);
+        document.getElementById('actionArea').innerText = "Failed to load trade data.";
         return;
     }
+
+    // Save the fetched row data into your global variable
+    tradeDetails = data;
+    
+    // Render the layout cleanly using the verified database row data
+    renderUI(tradeDetails); 
+}
+
+// Make sure it runs when the screen boots up
+loadTradeRoom();
+
 
     // 3. Save to global variable and render
     tradeDetails = data;
