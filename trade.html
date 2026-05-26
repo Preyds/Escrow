@@ -131,7 +131,13 @@
             if (trade.status === 'pending') {
                 resetTimelineToPending();
                 timerContainer.classList.add('hidden'); 
-                actions.innerHTML = `<button onclick="processPaystackCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow transition">Deposit Secured Escrow Payment</button>`;
+                
+                // Show the total amount including fee to the buyer on the button
+                const baseAmount = parseFloat(trade.amount);
+                const fee = baseAmount * 0.02;
+                const totalWithFee = baseAmount + fee;
+                
+                actions.innerHTML = `<button onclick="processPaystackCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow transition">Deposit Secured Escrow (₦${totalWithFee.toLocaleString()})</button>`;
             } 
             else if (trade.status === 'paid') {
                 setTimelineToPaid();
@@ -201,34 +207,38 @@
             timerInterval = setInterval(updateClock, 1000); 
         }
 
-        function payWithPaystack() {
-    // 1. Grab the base contract amount stored in your Supabase 'trade' row data object
-    // (Assuming 'currentTradeData' holds the active database row from your listener)
-    const baseAmount = parseFloat(currentTradeData.amount); 
-    
-    // 2. Re-calculate the exact 2% platform fee matching index.html
-    const platformFee = baseAmount * 0.02;
-    const finalBillableAmount = baseAmount + platformFee;
+        // Renamed to processPaystackCheckout to match your button onclick handler!
+        function processPaystackCheckout() {
+            if (!tradeDetails) return;
 
-    // 3. Paystack processes in Kobo, so multiply the grand total by 100
-    const totalInKobo = Math.round(finalBillableAmount * 100);
+            const baseAmount = parseFloat(tradeDetails.amount); 
+            
+            // Re-calculate the exact 2% platform fee
+            const platformFee = baseAmount * 0.02;
+            const finalBillableAmount = baseAmount + platformFee;
 
-    let handler = PaystackPop.setup({
-        key: 'pk_test_your_public_key_here', // Your Paystack Public Key
-        email: currentTradeData.buyer_email,
-        amount: totalInKobo, // Charges Amount + Fee perfectly
-        currency: 'NGN',
-        ref: 'T' + Math.floor((Math.random() * 1000000000) + 1),
-        callback: function(response) {
-            // Payment success script runs here to change status to 'paid'
-            updateTradeStatusToPaid(response.reference);
-        },
-        onClose: function() {
-            alert('Transaction window closed before deposition was complete.');
+            // Paystack expects amount in Kobo, so multiply by 100
+            const totalInKobo = Math.round(finalBillableAmount * 100);
+
+            let handler = PaystackPop.setup({
+                key: PAYSTACK_KEY, 
+                email: tradeDetails.buyer_email,
+                amount: totalInKobo, // Charges Amount + Fee perfectly
+                currency: 'NGN',
+                callback: function(res) {
+                    updateTradeStatus('paid');
+                },
+                onClose: function() {
+                    alert('Transaction window closed before deposition was complete.');
+                }
+            });
+            handler.openIframe();
         }
-    });
-    handler.openIframe();
-}
+
+        async function updateTradeStatus(newStatus) {
+            const { error } = await supabaseClient.from('trade').update({ status: newStatus }).eq('id', tradeId);
+            if (error) alert("Status adjustment failure: " + error.message);
+        }
 
         function resetTimelineToPending() {
             document.getElementById('dotPaid').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-gray-700 border-4 border-gray-800";
