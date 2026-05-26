@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tradescrow - Admin Resolution Desk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen pb-12">
+
+    <nav class="bg-gray-800 border-b border-gray-700 p-4 shadow-md">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-red-500">🛡️ Tradescrow Support Desk</h1>
+            <span class="text-xs bg-red-500/10 text-red-400 font-bold px-3 py-1 rounded-full border border-red-500/20">
+                Admin Mode
+            </span>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-4 mt-8">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-xl font-bold text-gray-200">Active Escalations</h2>
+                <p class="text-xs text-gray-400">Review, release, or refund contested peer-to-peer operations.</p>
+            </div>
+            <button onclick="fetchEscrowDeals()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold py-2 px-3 rounded-lg border border-gray-700 transition">
+                🔄 Refresh Queue
+            </button>
+        </div>
+
+        <div id="adminQueue" class="space-y-4">
+            <div class="p-8 text-center text-sm text-gray-500 bg-gray-800 rounded-2xl border border-gray-700 shadow-xl">
+                <span class="animate-pulse block mb-1">🔍 Querying secure registry logs...</span>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Platform Configuration Constants
+        const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Fetch disputed and paid rows from the database
+        async function fetchEscrowDeals() {
+            const container = document.getElementById('adminQueue');
+            
+            const { data, error } = await supabaseClient
+                .from('trade')
+                .select('*')
+                .in('status', ['disputed', 'paid'])
+                .order('status', { ascending: false }); // Puts disputes right at the top
+
+            if (error) {
+                container.innerHTML = `
+                    <div class="p-6 bg-red-950/20 border border-red-500/20 rounded-xl text-center text-sm text-red-400">
+                        Error fetching logs: ${error.message}
+                    </div>`;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-sm text-gray-500 bg-gray-800 rounded-2xl border border-gray-700">
+                        🎉 Clean slate! No active disputes or pending hold orders found.
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = ""; // Clear loader element
+
+            // Map rows dynamically into UI cards
+            data.forEach(deal => {
+                const isDisputed = deal.status === 'disputed';
+                const statusBadgeColor = isDisputed ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
+                
+                const card = document.createElement('div');
+                card.className = "bg-gray-800 border border-gray-700 rounded-2xl p-5 shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition hover:border-gray-600";
+                
+                card.innerHTML = `
+                    <div class="space-y-2 flex-1 w-full">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded border ${statusBadgeColor} uppercase">
+                                ${deal.status}
+                            </span>
+                            <span class="text-xs text-gray-500 font-mono">ID: ${deal.id}</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:text-sm pt-1">
+                            <div><span class="text-gray-500">Asset:</span> <span class="text-white font-medium">${deal.asset_type}</span></div>
+                            <div><span class="text-gray-500">Value:</span> <span class="text-green-400 font-bold">₦${deal.amount.toLocaleString()}</span></div>
+                            <div class="col-span-2 mt-1 break-all"><span class="text-gray-500">Buyer:</span> <span class="text-gray-300">${deal.buyer_email}</span></div>
+                            <div class="col-span-2 break-all"><span class="text-gray-500">Seller:</span> <span class="text-gray-300">${deal.seller_email}</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex md:flex-col gap-2 w-full md:w-auto pt-2 md:pt-0 border-t border-gray-700 md:border-none">
+                        <button onclick="resolveEscrow('${deal.id}', 'released')" class="flex-1 md:w-44 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow shadow-blue-900/40">
+                            Force Release Payout
+                        </button>
+                        <button onclick="resolveEscrow('${deal.id}', 'pending')" class="flex-1 md:w-44 bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold py-2.5 px-4 rounded-xl text-xs border border-gray-600 transition">
+                            Revert to Pending / Refund
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Handle Database Update State Shifts directly
+        async function resolveEscrow(targetId, targetStatus) {
+            const confirmationMessage = `Are you absolutely sure you want to force this contract to status: "${targetStatus}"? This change live updates the trade room instantly.`;
+            if (!confirm(confirmationMessage)) return;
+
+            const { error } = await supabaseClient
+                .from('trade')
+                .update({ status: targetStatus })
+                .eq('id', targetId);
+
+            if (error) {
+                alert("Database arbitration error: " + error.message);
+            } else {
+                alert("Contract status updated successfully!");
+                fetchEscrowDeals(); // Refresh dashboard listing
+            }
+        }
+
+        // Auto-run when admin portal launches
+        fetchEscrowDeals();
+    </script>
+</body>
+</html>
