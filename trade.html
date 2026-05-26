@@ -89,7 +89,7 @@
 
             supabaseClient
                 .channel('schema-db-changes')
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trades', filter: `id=eq.${tradeId}` }, payload => {
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trade', filter: `id=eq.${tradeId}` }, payload => {
                     tradeDetails = payload.new;
                     renderUI(tradeDetails);
                 })
