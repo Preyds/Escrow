@@ -178,25 +178,27 @@ function renderUI(trade) {
 
 // Function to calculate and run the countdown clock
 function startInspectionCountdown(createdAtTimestamp) {
+function startInspectionCountdown(createdAtTimestamp) {
     const clockDisplay = document.getElementById('countdownClock');
+    if (!clockDisplay) return; // Guard clause to prevent errors
+    
     let creationTime;
 
-    // Fallback Check: If the timestamp is missing from the real-time event, use the current time
     if (!createdAtTimestamp) {
         creationTime = new Date().getTime();
     } else {
-        // Safe string conversions for cross-platform mobile browser rendering
-        let safeDateTimeString = createdAtTimestamp.replace('T', ' ').replace(/\..+/, '');
-        safeDateTimeString = safeDateTimeString.replace(/-/g, '/');
+        // Safe, native parsing that works perfectly across mobile Chrome/WebView
+        const parsedDate = new Date(createdAtTimestamp).getTime();
         
-        const parsedDate = new Date(safeDateTimeString + ' UTC').getTime();
-        
-        // Double check that the parsed date is a real number, otherwise use current time as absolute fallback
+        // If the database date format acts weird, fallback cleanly to right now
         creationTime = isNaN(parsedDate) ? new Date().getTime() : parsedDate;
     }
     
-    // Set deadline to exactly 24 Hours after initialization
+    // Set deadline to exactly 24 Hours after creation
     const inspectionDeadline = creationTime + (24 * 60 * 60 * 1000);
+
+    // Clear any previous interval if it exists
+    if (timerInterval) clearInterval(timerInterval);
 
     function updateClock() {
         const now = new Date().getTime();
@@ -219,7 +221,7 @@ function startInspectionCountdown(createdAtTimestamp) {
             String(seconds).padStart(2, '0');
     }
 
-    updateClock(); // Run immediately
+    updateClock(); // Run immediately to avoid UI delay
     timerInterval = setInterval(updateClock, 1000); // Tick every second
 }
 
