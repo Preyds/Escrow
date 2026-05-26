@@ -331,11 +331,18 @@
                 const distance = inspectionDeadline - now;
 
                 if (distance < 0) {
-                    clearInterval(timerInterval);
-                    clockDisplay.innerText = "EXPIRED";
-                    clockDisplay.className = "text-red-500 font-bold";
-                    return;
-                }
+    clearInterval(timerInterval);
+    clockDisplay.innerText = "EXPIRED";
+    clockDisplay.className = "text-red-500 font-bold";
+    
+    // AUTO-RELEASE LOGIC:
+    // If the clock runs out and the status is still 'paid', force release the funds to the seller!
+    if (tradeDetails && tradeDetails.status === 'paid') {
+        console.log("Inspection window expired. Automatically releasing funds to seller...");
+        updateTradeStatus('released');
+    }
+    return;
+}
 
                 const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                 const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
