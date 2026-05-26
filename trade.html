@@ -39,11 +39,12 @@
                     <p id="txtPaid" class="font-semibold">Payment Confirmed</p>
                     <p class="text-xs">Funds are locked in escrow. Seller can safely hand over login instructions.</p>
                 </div>
-                <div id="timerContainer" class="hidden mb-6 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex justify-between items-center text-sm">
-    <div class="flex items-center gap-2 text-yellow-400 font-medium">
-        <span>⏳ Inspection Window:</span>
-    </div>
-    <div id="countdownClock" class="font-mono font-bold text-base text-white tracking-wider">--:--:--</div>
+                
+                <div id="timerContainer" class="hidden my-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex justify-between items-center text-sm">
+                    <div class="flex items-center gap-2 text-yellow-400 font-medium">
+                        <span>⏳ Inspection Window:</span>
+                    </div>
+                    <div id="countdownClock" class="font-mono font-bold text-base text-white tracking-wider">--:--:--</div>
                 </div>
                 
                 <div id="stepReleased" class="text-gray-500">
@@ -60,63 +61,49 @@
     </main>
 
     <script>
-        // PASTE YOUR SETTINGS HERE
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
         const PAYSTACK_KEY = 'pk_test_ae592ca17d3b0794152ccbc0118f89c55c90fc95';
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Extract ID parameter out of current window url string
         const urlParams = new URLSearchParams(window.location.search);
         const tradeId = urlParams.get('id');
 
         let tradeDetails = null;
+        let timerInterval = null; 
 
         if (!tradeId) {
             alert("No trade ID found in URL link string!");
             window.location.href = 'index.html';
         } 
 
-async function loadTradeRoom() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tradeId = urlParams.get('id');
+        async function loadTradeRoom() {
+            console.log("Fetching record for ID:", tradeId);
 
-    if (!tradeId) {
-        alert("No contract ID provided in URL.");
-        return;
-    }
+            const { data, error } = await supabaseClient
+                .from('trade')
+                .select('*')
+                .eq('id', tradeId);
 
-    console.log("Fetching record for ID:", tradeId);
+            if (error) {
+                console.error("Supabase Database Error:", error.message);
+                document.getElementById('actionArea').innerText = "Database connection error.";
+                return;
+            }
 
-    const { data, error } = await supabaseClient
-        .from('trade')
-        .select('*')
-        .eq('id', tradeId);
+            if (!data || data.length === 0) {
+                console.error("No record found matching ID:", tradeId);
+                document.getElementById('actionArea').innerText = "Contract room not found or restricted.";
+                return;
+            }
 
-    if (error) {
-        console.error("Supabase Database Error:", error.message);
-        document.getElementById('actionArea').innerText = "Database connection error.";
-        return;
-    }
+            tradeDetails = data[0];
+            renderUI(tradeDetails); 
+            setupRealtimeListener();
+        }
 
-    if (!data || data.length === 0) {
-        console.error("No record found matching ID:", tradeId);
-        document.getElementById('actionArea').innerText = "Contract room not found or restricted.";
-        return;
-    }
-
-    // Assign the clear row object to your global state
-    tradeDetails = data[0];
-    
-    // Fire the UI builder
-    renderUI(tradeDetails); 
-}
-
-// Kickstart loading process immediately
-loadTradeRoom();
-          
-// 2. Open Realtime Live Web Socket Listening Pipeline
+        function setupRealtimeListener() {
             document.getElementById('liveBadge').className = "text-xs bg-green-500/10 text-green-400 font-bold px-2.5 py-1 rounded-full border border-green-500/20";
             document.getElementById('liveBadge').innerText = "Live Synced";
 
@@ -129,118 +116,103 @@ loadTradeRoom();
                 .subscribe();
         }
 
-        let timerInterval = null; // Global reference to clear the clock when status changes
+        function renderUI(trade) {
+            document.getElementById('lblAsset').innerText = trade.asset_type;
+            document.getElementById('lblAmount').innerText = '₦' + trade.amount.toLocaleString();
+            document.getElementById('lblBuyer').innerText = trade.buyer_email;
+            document.getElementById('lblSeller').innerText = trade.seller_email;
 
-function renderUI(trade) {
-    document.getElementById('lblAsset').innerText = trade.asset_type;
-    document.getElementById('lblAmount').innerText = '₦' + trade.amount.toLocaleString();
-    document.getElementById('lblBuyer').innerText = trade.buyer_email;
-    document.getElementById('lblSeller').innerText = trade.seller_email;
+            const actions = document.getElementById('actionArea');
+            const timerContainer = document.getElementById('timerContainer');
+            actions.innerHTML = ""; 
+            
+            if (timerInterval) clearInterval(timerInterval); 
 
-    const actions = document.getElementById('actionArea');
-    const timerContainer = document.getElementById('timerContainer');
-    actions.innerHTML = ""; // Clear existing
-    
-    if (timerInterval) clearInterval(timerInterval); // Reset existing timer loops
+            if (trade.status === 'pending') {
+                resetTimelineToPending();
+                timerContainer.classList.add('hidden'); 
+                actions.innerHTML = `<button onclick="processPaystackCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow transition">Deposit Secured Escrow Payment</button>`;
+            } 
+            else if (trade.status === 'paid') {
+                setTimelineToPaid();
+                timerContainer.classList.remove('hidden');
+                
+                const targetTimestamp = trade.created_at || null;
+                startInspectionCountdown(targetTimestamp);
 
-    // Handle Workflow States
-    if (trade.status === 'pending') {
-        resetTimelineToPending();
-        timerContainer.classList.add('hidden'); // Hide timer before payment
-        actions.innerHTML = `<button onclick="processPaystackCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow transition">Deposit Secured Escrow Payment</button>`;
-    } 
-        else if (trade.status === 'paid') {
-        setTimelineToPaid();
-        
-        // Show the timer container
-        timerContainer.classList.remove('hidden');
-        
-        // Safe check: If a refresh happened and created_at exists, use it.
-        // Otherwise, fall back to right now so the app never freezes up!
-        const targetTimestamp = trade.created_at || null;
-        startInspectionCountdown(targetTimestamp);
-
-        actions.innerHTML = `
-            <div class="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-xs text-yellow-400 mb-2 font-medium">⚠️ Seller: Send account details via dm now. Buyer: Verify custody before releasing.</div>
-            <div class="flex gap-3">
-                <button onclick="updateTradeStatus('released')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow transition text-sm">Release Funds</button>
-                <button onclick="updateTradeStatus('disputed')" class="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold py-3 px-4 rounded-xl border border-red-500/20 transition text-sm">Raise Dispute</button>
-            </div>`;
-    } 
-
-    else if (trade.status === 'released') {
-        setTimelineToSettled();
-        timerContainer.classList.add('hidden'); // Hide timer when settled
-        actions.innerHTML = `<div class="bg-green-500/10 border border-green-500/20 text-green-400 font-semibold p-4 rounded-xl text-center text-sm">🔒 Transaction fully verified and payouts finalized successfully.</div>`;
-    }
-    else if (trade.status === 'disputed') {
-        setTimelineToDisputed();
-        timerContainer.classList.add('hidden'); // Hide timer if disputed
-        actions.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 font-semibold p-4 rounded-xl text-center text-sm">🛑 Hold Order Placed. System Admin reviewing submitted trade logs.</div>`;
-    }
-}
-
-// Function to calculate and run the countdown clock
-function startInspectionCountdown(createdAtTimestamp) {
-function startInspectionCountdown(createdAtTimestamp) {
-    const clockDisplay = document.getElementById('countdownClock');
-    if (!clockDisplay) return; // Guard clause to prevent errors
-    
-    let creationTime;
-
-    if (!createdAtTimestamp) {
-        creationTime = new Date().getTime();
-    } else {
-        // Safe, native parsing that works perfectly across mobile Chrome/WebView
-        const parsedDate = new Date(createdAtTimestamp).getTime();
-        
-        // If the database date format acts weird, fallback cleanly to right now
-        creationTime = isNaN(parsedDate) ? new Date().getTime() : parsedDate;
-    }
-    
-    // Set deadline to exactly 24 Hours after creation
-    const inspectionDeadline = creationTime + (24 * 60 * 60 * 1000);
-
-    // Clear any previous interval if it exists
-    if (timerInterval) clearInterval(timerInterval);
-
-    function updateClock() {
-        const now = new Date().getTime();
-        const distance = inspectionDeadline - now;
-
-        if (distance < 0) {
-            clearInterval(timerInterval);
-            clockDisplay.innerText = "EXPIRED";
-            clockDisplay.className = "text-red-500 font-bold";
-            return;
+                actions.innerHTML = `
+                    <div class="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-xs text-yellow-400 mb-2 font-medium">⚠️ Seller: Send account details via dm now. Buyer: Verify custody before releasing.</div>
+                    <div class="flex gap-3">
+                        <button onclick="updateTradeStatus('released')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow transition text-sm">Release Funds</button>
+                        <button onclick="updateTradeStatus('disputed')" class="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold py-3 px-4 rounded-xl border border-red-500/20 transition text-sm">Raise Dispute</button>
+                    </div>`;
+            } 
+            else if (trade.status === 'released') {
+                setTimelineToSettled();
+                timerContainer.classList.add('hidden'); 
+                actions.innerHTML = `<div class="bg-green-500/10 border border-green-500/20 text-green-400 font-semibold p-4 rounded-xl text-center text-sm">🔒 Transaction fully verified and payouts finalized successfully.</div>`;
+            }
+            else if (trade.status === 'disputed') {
+                setTimelineToDisputed();
+                timerContainer.classList.add('hidden'); 
+                actions.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 font-semibold p-4 rounded-xl text-center text-sm">🛑 Hold Order Placed. System Admin reviewing submitted trade logs.</div>`;
+            }
         }
 
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        function startInspectionCountdown(createdAtTimestamp) {
+            const clockDisplay = document.getElementById('countdownClock');
+            if (!clockDisplay) return; 
+            
+            let creationTime;
 
-        clockDisplay.innerText = 
-            String(hours).padStart(2, '0') + ":" + 
-            String(minutes).padStart(2, '0') + ":" + 
-            String(seconds).padStart(2, '0');
-    }
+            if (!createdAtTimestamp) {
+                creationTime = new Date().getTime();
+            } else {
+                const parsedDate = new Date(createdAtTimestamp).getTime();
+                creationTime = isNaN(parsedDate) ? new Date().getTime() : parsedDate;
+            }
+            
+            const inspectionDeadline = creationTime + (24 * 60 * 60 * 1000);
 
-    updateClock(); // Run immediately to avoid UI delay
-    timerInterval = setInterval(updateClock, 1000); // Tick every second
-}
+            if (timerInterval) clearInterval(timerInterval);
+
+            function updateClock() {
+                const now = new Date().getTime();
+                const distance = inspectionDeadline - now;
+
+                if (distance < 0) {
+                    clearInterval(timerInterval);
+                    clockDisplay.innerText = "EXPIRED";
+                    clockDisplay.className = "text-red-500 font-bold";
+                    return;
+                }
+
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                clockDisplay.innerText = 
+                    String(hours).padStart(2, '0') + ":" + 
+                    String(minutes).padStart(2, '0') + ":" + 
+                    String(seconds).padStart(2, '0');
+            }
+
+            updateClock(); 
+            timerInterval = setInterval(updateClock, 1000); 
+        }
 
         function processPaystackCheckout() {
-    let handler = PaystackPop.setup({
-        key: PAYSTACK_KEY,
-        email: tradeDetails.buyer_email, // This perfectly uses the dynamic database record now!
-        amount: tradeDetails.amount * 100,
-        currency: 'NGN',
-        callback: function(res) {
-            updateTradeStatus('paid');
+            let handler = PaystackPop.setup({
+                key: PAYSTACK_KEY,
+                email: tradeDetails.buyer_email, 
+                amount: tradeDetails.amount * 100,
+                currency: 'NGN',
+                callback: function(res) {
+                    updateTradeStatus('paid');
+                }
+            });
+            handler.openIframe();
         }
-    });
-    handler.openIframe();
-}
 
         async function updateTradeStatus(newStatus) {
             const { error } = await supabaseClient.from('trade').update({ status: newStatus }).eq('id', tradeId);
@@ -274,6 +246,9 @@ function startInspectionCountdown(createdAtTimestamp) {
             document.getElementById('txtPaid').className = "font-semibold text-red-500";
             document.getElementById('txtPaid').innerText = "Dispute Locked Action";
         }
+
+        // Run immediately on page boot
+        loadTradeRoom();
     </script>
 </body>
 </html>
