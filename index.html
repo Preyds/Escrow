@@ -83,6 +83,30 @@
                             <option value="101">Provadus Bank</option>
                         </select>
                     </div>
+                    <div id="sellerBankSection" class="space-y-3 border-t border-gray-700 pt-5 mt-4">
+    <h4 class="text-xs font-bold text-yellow-500 uppercase tracking-wider">Seller Payout Destination</h4>
+    
+    <div>
+        <label class="block text-xs text-gray-400 mb-1">Seller's Bank</label>
+        <select id="bankCode" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-yellow-500 transition">
+            <option value="058">GTBank</option>
+            <option value="011">First Bank of Nigeria</option>
+            <option value="033">United Bank for Africa (UBA)</option>
+            <option value="057">Zenith Bank</option>
+            <option value="044">Access Bank</option>
+            <option value="070">Wema Bank</option>
+            <option value="305">OPay</option>
+            <option value="50211">Kuda Bank</option>
+            <option value="101">Provadus Bank</option>
+        </select>
+    </div>
+
+    <div>
+        <label class="block text-xs text-gray-400 mb-1">Seller's Account Number</label>
+        <input id="accNumber" type="text" maxlength="10" placeholder="0123456789" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-yellow-500 transition">
+    </div>
+                    </div>
+                    
 
                     <div>
                         <label class="block text-xs text-gray-400 mb-1">Seller's Account Number</label>
@@ -114,6 +138,23 @@
 
             feeDisplay.innerText = `₦${escrowFee.toLocaleString()}`;
             totalDisplay.innerText = `₦${totalAmount.toLocaleString()}`;
+            // Toggle Seller Banking Visibility based on selected role
+const roleSelect = document.getElementById('userRole');
+const sellerBankSection = document.getElementById('sellerBankSection');
+
+roleSelect.addEventListener('change', () => {
+    if (roleSelect.value === 'buyer') {
+        sellerBankSection.classList.add('hidden');
+    } else {
+        sellerBankSection.classList.remove('hidden');
+    }
+});
+
+// Run it once on page boot to ensure accurate state alignment
+if (roleSelect.value === 'buyer') {
+    sellerBankSection.classList.add('hidden');
+}
+            
         });
 
         async function handleFormSubmit(e) {
