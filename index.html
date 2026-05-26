@@ -79,39 +79,45 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function handleFormSubmit(e) {
-            e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            btn.disabled = true;
-            btn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Creating Contract...`;
-            
-            const asset = document.getElementById('assetType').value;
-            const amount = parseInt(document.getElementById('tradeAmount').value);
-            const peerEmail = document.getElementById('peerContact').value;
-            const userRole = document.getElementById('userRole').value;
-            
-            const buyerEmail = (userRole === 'buyer') ? 'admin@tradescrow.com' : peerEmail;
-            const sellerEmail = (userRole === 'seller') ? 'admin@tradescrow.com' : peerEmail;
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Creating Contract...`;
+    
+    const asset = document.getElementById('assetType').value;
+    const amount = parseInt(document.getElementById('tradeAmount').value);
+    const myEmail = document.getElementById('userEmail').value;
+    const partnerEmail = document.getElementById('peerContact').value;
+    const userRole = document.getElementById('userRole').value;
+    
+    // Dynamically assign emails based on selected role
+    const buyerEmail = (userRole === 'buyer') ? myEmail : partnerEmail;
+    const sellerEmail = (userRole === 'seller') ? myEmail : partnerEmail;
 
-            // Save deal to Supabase
-            const { data, error } = await supabaseClient
-                .from('trade')
-                .insert([
-                    { 
-                        asset_type: asset, 
-                        amount: amount, 
-                        status: 'pending', 
-                        buyer_email: buyerEmail, 
-                        seller_email: sellerEmail 
-                    }
-                ])
-                .select();
-
-            if (error) {
-                alert('Database Error: ' + error.message);
-                btn.disabled = false;
-                btn.innerText = 'Initialize Escrow Deal';
-                return;
+    // Save deal to Supabase (using your singular table 'trade')
+    const { data, error } = await supabaseClient
+        .from('trade') 
+        .insert([
+            { 
+                asset_type: asset, 
+                amount: amount, 
+                status: 'pending', 
+                buyer_email: buyerEmail, 
+                seller_email: sellerEmail 
             }
+        ])
+        .select();
+
+    if (error) {
+        alert('Database Error: ' + error.message);
+        btn.disabled = false;
+        btn.innerText = 'Initialize Escrow Deal';
+        return;
+    }
+
+    const newTradeId = data[0].id;
+    window.location.href = `trade.html?id=${newTradeId}`;
+}
 
             // Redirect user directly to the live Tracking Deal Room page with the database ID in the link
             const newTradeId = data[0].id;
