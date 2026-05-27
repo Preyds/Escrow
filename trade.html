@@ -99,7 +99,6 @@
             window.location.href = 'index.html';
         } 
 
-        // 1. Fetch History once on page bootup
         async function loadChatHistory() {
             const windowContainer = document.getElementById('chatMessageWindow');
             
@@ -121,11 +120,9 @@
             }
         }
 
-        // 2. Clear loader and append data cleanly
         function appendMessageToUI(msg) {
             const windowContainer = document.getElementById('chatMessageWindow');
             
-            // Remove the default empty placeholder text if present
             if (windowContainer.querySelector('.text-gray-600')) {
                 windowContainer.innerHTML = "";
             }
@@ -146,7 +143,7 @@
             windowContainer.scrollTop = windowContainer.scrollHeight;
         }
 
-        // 3. LISTEN TO LIVE INSERTIONS (Realtime Pipeline)
+        // Fixes Bug #3: Replaced raw filter with a robust script check inside callback
         function setupChatRealtimeListener() {
             supabaseClient
                 .channel(`public-messages-room-${tradeId}`)
@@ -155,12 +152,14 @@
                     { 
                         event: 'INSERT', 
                         schema: 'public', 
-                        table: 'messages',
-                        filter: `trade_id=eq.${tradeId}`
+                        table: 'messages'
                     }, 
                     (payload) => {
-                        console.log('🔔 Live Message Received:', payload.new);
-                        appendMessageToUI(payload.new);
+                        console.log('🔔 Row Event Intercepted:', payload.new);
+                        // Ensure incoming text belongs to this active contract room instantly
+                        if (payload.new.trade_id === tradeId) {
+                            appendMessageToUI(payload.new);
+                        }
                     }
                 )
                 .subscribe((status) => {
@@ -168,18 +167,16 @@
                 });
         }
 
-        // 4. Send Message Event Execution
         async function sendChatMessage(e) {
             e.preventDefault();
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
             if (!text || !tradeDetails) return;
 
-            input.value = ""; // Clear immediately for seamless UX
+            input.value = ""; 
 
             let activeUserEmail = 'Guest/Partner';
 
-            // Verify or prompt identity
             if (!localStorage.getItem('tradescrow_user_email')) {
                 const viewerEmail = prompt("Please enter your email to join the secure chat sync:", "");
                 if (viewerEmail) {
@@ -194,7 +191,6 @@
                 activeUserEmail = tradeDetails.buyer_email || 'Participant';
             }
 
-            // Insert cleanly. The live pipeline handles appending it to the UI automatically!
             const { error } = await supabaseClient
                 .from('messages')
                 .insert([{ 
@@ -208,7 +204,6 @@
             }
         }
 
-        // Core Room Loading Data Operations Sequence
         async function loadTradeRoom() {
             console.log("Fetching record for ID:", tradeId);
 
@@ -233,7 +228,6 @@
             renderUI(tradeDetails); 
             setupRealtimeListener();
             
-            // Fire layout operations
             loadChatHistory();
             setupChatRealtimeListener();
         }
@@ -251,7 +245,7 @@
                 .subscribe();
         }
 
-                function renderUI(trade) {
+        function renderUI(trade) {
             document.getElementById('lblAsset').innerText = trade.asset_type;
             document.getElementById('lblAmount').innerText = '₦' + trade.amount.toLocaleString();
             document.getElementById('lblBuyer').innerText = trade.buyer_email;
@@ -267,8 +261,7 @@
             const isBuyer = viewerEmail === trade.buyer_email.toLowerCase();
             const isSeller = viewerEmail === trade.seller_email.toLowerCase();
 
-            // 🌟 NEW SELLER BANK DETAILS FORM CHECK 🌟
-            // If the user viewing is the seller, and bank details are not registered yet, force display the setup form first
+            // Setup Payout Destination Form if viewing as the seller and fields are empty
             if (isSeller && (!trade.seller_account_number || !trade.seller_bank_code)) {
                 actions.innerHTML = `
                     <div class="bg-gray-950 border border-yellow-500/20 rounded-xl p-4 my-2">
@@ -296,10 +289,9 @@
                         </div>
                     </div>
                 `;
-                return; // Stop rendering traditional status actions until banking parameters are registered
+                return; 
             }
 
-            // --- STATUS: PENDING ---
             if (trade.status === 'pending') {
                 resetTimelineToPending();
                 timerContainer.classList.add('hidden'); 
@@ -315,7 +307,6 @@
                     actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Awaiting payment from buyer...</div>`;
                 }
             } 
-            // --- STATUS: PAID ---
             else if (trade.status === 'paid') {
                 setTimelineToPaid();
                 timerContainer.classList.remove('hidden');
@@ -340,13 +331,11 @@
                     actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Deal is funded. Verification phase active.</div>`;
                 }
             } 
-            // --- STATUS: RELEASED ---
             else if (trade.status === 'released') {
                 setTimelineToSettled();
                 timerContainer.classList.add('hidden'); 
                 actions.innerHTML = `<div class="bg-green-500/10 border border-green-500/20 text-green-400 font-semibold p-4 rounded-xl text-center text-sm">🔒 Transaction fully verified and payouts finalized successfully.</div>`;
             }
-            // --- STATUS: DISPUTED ---
             else if (trade.status === 'disputed') {
                 setTimelineToDisputed();
                 timerContainer.classList.add('hidden'); 
@@ -354,7 +343,6 @@
             }
         }
 
-        // 🌟 NEW FUNCTION TO EXECUTE THE SUPABASE UPDATE TRIGGER 🌟
         async function submitBankDetails() {
             const bankCode = document.getElementById('txtSellerBank').value;
             const accountNumber = document.getElementById('txtSellerNumber').value.trim();
@@ -378,7 +366,6 @@
                 alert("Failed to record details: " + error.message);
             } else {
                 alert("Settlement bank details assigned successfully!");
-                // Notice how your realtime database stream will automatically re-run renderUI() for us!
             }
         }
 
@@ -446,7 +433,7 @@
                     alert('Transaction window closed before deposition was complete.');
                 }
             });
-         handler.openIframe();
+            handler.openIframe();
         }
 
         async function updateTradeStatus(newStatus) {
@@ -506,7 +493,6 @@
             document.getElementById('txtPaid').innerText = "Dispute Locked Action";
         }
 
-        // Run immediately on page boot
         loadTradeRoom();
     </script>
 </body>
