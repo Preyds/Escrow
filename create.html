@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tradescrow - Initialize Deal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen pb-12">
+
+    <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-yellow-500 tracking-wide">🎮 Tradescrow</h1>
+            <span class="text-xs bg-yellow-500/10 text-yellow-400 font-bold px-2.5 py-1 rounded-full border border-yellow-500/20">P2P Escrow Engine</span>
+        </div>
+    </nav>
+
+    <main class="max-w-xl mx-auto px-4 mt-8">
+        <div class="text-center mb-8">
+            <h2 class="text-2xl font-extrabold text-white">Create Account Exchange Contract</h2>
+            <p class="text-gray-400 text-sm mt-1">Safely trade gaming handles, social profiles, and digital assets.</p>
+        </div>
+
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl">
+            <form id="escrowForm" onsubmit="handleFormSubmit(event)" class="space-y-5">
+                
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Asset Type</label>
+                    <select id="assetType" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition">
+                        <option value="Gaming Account">Gaming Account (Free Fire, CODM, etc.)</option>
+                        <option value="Instagram">Instagram Profile</option>
+                        <option value="TikTok">TikTok Account</option>
+                        <option value="Facebook">Facebook Page/Profile</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Trade Amount (NGN / ₦)</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-3.5 text-gray-500 font-medium">₦</span>
+                        <input id="tradeAmount" type="number" required placeholder="5,000" class="w-full bg-gray-950 border border-gray-700 rounded-xl pl-9 pr-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition">
+                    </div>
+                    <div class="mt-2 text-xs text-gray-400 flex justify-between px-1">
+                        <span>Escrow Fee (2%): <span id="feeDisplay" class="text-gray-300 font-medium">₦0</span></span>
+                        <span>Total to Pay: <span id="totalDisplay" class="text-green-400 font-bold">₦0</span></span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Your Role</label>
+                    <select id="userRole" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition">
+                        <option value="buyer">I am the Buyer</option>
+                        <option value="seller">I am the Seller</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Your Email</label>
+                        <input id="userEmail" type="email" required placeholder="your@email.com" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Partner's Email</label>
+                        <input id="peerContact" type="email" required placeholder="trader@mail.com" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition">
+                    </div>
+                </div>
+
+                <div id="sellerBankSection" class="space-y-3 border-t border-gray-700 pt-5 mt-4">
+                    <h4 class="text-xs font-bold text-yellow-500 uppercase tracking-wider">Seller Payout Destination</h4>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Seller's Bank</label>
+                        <select id="bankCode" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-yellow-500 transition">
+                            <option value="058">GTBank</option>
+                            <option value="011">First Bank of Nigeria</option>
+                            <option value="033">United Bank for Africa (UBA)</option>
+                            <option value="057">Zenith Bank</option>
+                            <option value="044">Access Bank</option>
+                            <option value="070">Wema Bank</option>
+                            <option value="305">OPay</option>
+                            <option value="50211">Kuda Bank</option>
+                            <option value="101">Provadus Bank</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Seller's Account Number</label>
+                        <input id="accNumber" type="text" maxlength="10" placeholder="0123456789" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-yellow-500 transition">
+                    </div>
+                </div>
+
+                <button id="submitBtn" type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-3.5 px-4 rounded-xl shadow-lg transform active:scale-95 transition duration-150 mt-6 flex justify-center items-center gap-2">
+                    Initialize Escrow Deal
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const amountInput = document.getElementById('tradeAmount'); 
+        const feeDisplay = document.getElementById('feeDisplay');
+        const totalDisplay = document.getElementById('totalDisplay');
+        const roleSelect = document.getElementById('userRole');
+        const sellerBankSection = document.getElementById('sellerBankSection');
+
+        // 1. Fee Calculations
+        amountInput.addEventListener('input', () => {
+            const amount = parseFloat(amountInput.value) || 0;
+            const escrowFee = amount * 0.02; 
+            const totalAmount = amount + escrowFee;
+
+            feeDisplay.innerText = `₦${escrowFee.toLocaleString()}`;
+            totalDisplay.innerText = `₦${totalAmount.toLocaleString()}`;
+        });
+
+        // 2. Role Toggle UI Visibility Logic
+        roleSelect.addEventListener('change', () => {
+            if (roleSelect.value === 'buyer') {
+                sellerBankSection.classList.add('hidden');
+            } else {
+                sellerBankSection.classList.remove('hidden');
+            }
+        });
+
+        // 3. Initial Boot State Check Execution
+        if (roleSelect.value === 'buyer') {
+            sellerBankSection.classList.add('hidden');
+        }
+
+        // 4. Form Submission Database Routing Handling
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Creating Contract...`;
+            
+            const asset = document.getElementById('assetType').value;
+            const amount = parseInt(document.getElementById('tradeAmount').value);
+            const userEmail = document.getElementById('userEmail').value;
+            const peerEmail = document.getElementById('peerContact').value;
+            const userRole = document.getElementById('userRole').value;
+            
+            let bankCodeValue = null;
+            let accountNumberValue = null;
+
+            if (userRole === 'seller') {
+                bankCodeValue = document.getElementById('bankCode').value;
+                accountNumberValue = document.getElementById('accNumber').value;
+            }
+            
+            const buyerEmail = (userRole === 'buyer') ? userEmail : peerEmail;
+            const sellerEmail = (userRole === 'seller') ? userEmail : peerEmail;
+
+            const { data, error } = await supabaseClient
+                .from('trade')
+                .insert([
+                    { 
+                        asset_type: asset, 
+                        amount: amount, 
+                        status: 'pending', 
+                        buyer_email: buyerEmail, 
+                        seller_email: sellerEmail,
+                        seller_bank_code: bankCodeValue,
+                        seller_account_number: accountNumberValue,
+                        seller_account_name: bankCodeValue ? 'Pending Verification' : null
+                    }
+                ])
+                .select();
+
+            if (error) {
+                alert('Database Error: ' + error.message);
+                btn.disabled = false;
+                btn.innerText = 'Initialize Escrow Deal';
+                return;
+            }
+
+            const newTradeId = data[0].id;
+            localStorage.setItem('tradescrow_user_email', userEmail.trim().toLowerCase());
+            window.location.href = `trade.html?id=${newTradeId}`;
+        }
+    </script>
+</body>
+</html>
