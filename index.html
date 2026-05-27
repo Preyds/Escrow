@@ -119,7 +119,7 @@
             totalDisplay.innerText = `₦${totalAmount.toLocaleString()}`;
         });
 
-        // 2. Role Toggle UI Visibility Logic (Isolating outside the amount counter)
+        // 2. Role Toggle UI Visibility Logic
         roleSelect.addEventListener('change', () => {
             if (roleSelect.value === 'buyer') {
                 sellerBankSection.classList.add('hidden');
@@ -146,7 +146,6 @@
             const peerEmail = document.getElementById('peerContact').value;
             const userRole = document.getElementById('userRole').value;
             
-            // Read banking parameters contextually (or insert defaults if hidden)
             let bankCodeValue = null;
             let accountNumberValue = null;
 
