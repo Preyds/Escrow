@@ -251,7 +251,7 @@
                 .subscribe();
         }
 
-        function renderUI(trade) {
+                function renderUI(trade) {
             document.getElementById('lblAsset').innerText = trade.asset_type;
             document.getElementById('lblAmount').innerText = '₦' + trade.amount.toLocaleString();
             document.getElementById('lblBuyer').innerText = trade.buyer_email;
@@ -267,6 +267,39 @@
             const isBuyer = viewerEmail === trade.buyer_email.toLowerCase();
             const isSeller = viewerEmail === trade.seller_email.toLowerCase();
 
+            // 🌟 NEW SELLER BANK DETAILS FORM CHECK 🌟
+            // If the user viewing is the seller, and bank details are not registered yet, force display the setup form first
+            if (isSeller && (!trade.seller_account_number || !trade.seller_bank_code)) {
+                actions.innerHTML = `
+                    <div class="bg-gray-950 border border-yellow-500/20 rounded-xl p-4 my-2">
+                        <h4 class="text-xs font-bold text-yellow-500 mb-2 uppercase tracking-wide">🏦 Setup Payout Destination</h4>
+                        <p class="text-gray-400 text-[11px] mb-3">Input your Nigerian bank account setup where escrow settlements will be routed upon buyer verification approval.</p>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[10px] text-gray-500 mb-1">Select Bank</label>
+                                <select id="txtSellerBank" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-yellow-500">
+                                    <option value="058">GTBank</option>
+                                    <option value="011">First Bank</option>
+                                    <option value="044">Access Bank</option>
+                                    <option value="033">United Bank for Africa (UBA)</option>
+                                    <option value="057">Zenith Bank</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-500 mb-1">Account Number (10 Digits)</label>
+                                <input id="txtSellerNumber" type="text" maxlength="10" placeholder="e.g. 0001234567" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-yellow-500">
+                            </div>
+                            <button onclick="submitBankDetails()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-2 px-4 rounded-lg text-xs transition">
+                                Save Settlement Details
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return; // Stop rendering traditional status actions until banking parameters are registered
+            }
+
+            // --- STATUS: PENDING ---
             if (trade.status === 'pending') {
                 resetTimelineToPending();
                 timerContainer.classList.add('hidden'); 
@@ -282,6 +315,7 @@
                     actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Awaiting payment from buyer...</div>`;
                 }
             } 
+            // --- STATUS: PAID ---
             else if (trade.status === 'paid') {
                 setTimelineToPaid();
                 timerContainer.classList.remove('hidden');
@@ -306,15 +340,45 @@
                     actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Deal is funded. Verification phase active.</div>`;
                 }
             } 
+            // --- STATUS: RELEASED ---
             else if (trade.status === 'released') {
                 setTimelineToSettled();
                 timerContainer.classList.add('hidden'); 
                 actions.innerHTML = `<div class="bg-green-500/10 border border-green-500/20 text-green-400 font-semibold p-4 rounded-xl text-center text-sm">🔒 Transaction fully verified and payouts finalized successfully.</div>`;
             }
+            // --- STATUS: DISPUTED ---
             else if (trade.status === 'disputed') {
                 setTimelineToDisputed();
                 timerContainer.classList.add('hidden'); 
                 actions.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 font-semibold p-4 rounded-xl text-center text-sm">🛑 Hold Order Placed. System Admin reviewing submitted trade logs.</div>`;
+            }
+        }
+
+        // 🌟 NEW FUNCTION TO EXECUTE THE SUPABASE UPDATE TRIGGER 🌟
+        async function submitBankDetails() {
+            const bankCode = document.getElementById('txtSellerBank').value;
+            const accountNumber = document.getElementById('txtSellerNumber').value.trim();
+
+            if (accountNumber.length !== 10 || isNaN(accountNumber)) {
+                alert("Please input a valid 10-digit Nigerian bank account number!");
+                return;
+            }
+
+            console.log("Updating trade table matrix with bank details...", bankCode, accountNumber);
+
+            const { error } = await supabaseClient
+                .from('trade')
+                .update({
+                    seller_bank_code: bankCode,
+                    seller_account_number: accountNumber
+                })
+                .eq('id', tradeId);
+
+            if (error) {
+                alert("Failed to record details: " + error.message);
+            } else {
+                alert("Settlement bank details assigned successfully!");
+                // Notice how your realtime database stream will automatically re-run renderUI() for us!
             }
         }
 
