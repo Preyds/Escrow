@@ -3,447 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tradescrow - Live Deal Room</title>
+    <title>Tradescrow - Initialize Deal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://js.paystack.co/v1/inline.js"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen pb-12">
 
-    <nav class="bg-gray-800 border-b border-gray-700 p-4">
+    <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold text-yellow-500">🎮 Tradescrow Room</h1>
-            <span id="liveBadge" class="text-xs bg-gray-700 text-gray-400 font-bold px-2.5 py-1 rounded-full border border-gray-600 animate-pulse">Connecting...</span>
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="text-gray-400 hover:text-white mr-1 transition text-sm">← Back</a>
+                <h1 class="text-xl font-bold text-yellow-500 tracking-wide">🎮 Tradescrow</h1>
+            </div>
+            <span class="text-xs bg-yellow-500/10 text-yellow-400 font-bold px-2.5 py-1 rounded-full border border-yellow-500/20">P2P Escrow Engine</span>
         </div>
     </nav>
 
     <main class="max-w-xl mx-auto px-4 mt-8">
+        <div class="text-center mb-8">
+            <h2 class="text-2xl font-extrabold text-white">Create Account Exchange Contract</h2>
+            <p class="text-gray-400 text-sm mt-1">Safely trade gaming handles, social profiles, and digital assets.</p>
+        </div>
+
         <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl">
-            <h3 class="text-lg font-bold text-gray-200 mb-4">Contract Tracking</h3>
-            
-            <div class="p-4 bg-gray-950 rounded-xl text-sm border border-gray-800 grid grid-cols-2 gap-3 mb-6">
-                <div><span class="text-gray-500">Asset Type:</span> <span id="lblAsset" class="font-medium text-white">...</span></div>
-                <div><span class="text-gray-500">Total Price:</span> <span id="lblAmount" class="font-medium text-green-400">...</span></div>
-                <div class="col-span-2"><span class="text-gray-500">Buyer Email:</span> <span id="lblBuyer" class="font-medium text-white break-all">...</span></div>
-                <div class="col-span-2"><span class="text-gray-500">Seller Email:</span> <span id="lblSeller" class="font-medium text-white break-all">...</span></div>
-            </div>
-
-            <div class="mt-4 mb-6">
-                <button onclick="copyShareLink()" id="shareBtn" class="w-full bg-gray-700/50 hover:bg-gray-700 text-gray-300 font-semibold py-2.5 px-4 rounded-xl text-xs border border-gray-600 transition flex items-center justify-center gap-2">
-                    📋 Copy Shareable Trade Link
-                </button>
-            </div>
-            
-            <div class="relative pl-6 border-l-2 border-gray-700 space-y-6 text-sm mb-6">
-                <div id="stepPending">
-                    <span class="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-500 border-4 border-gray-800"></span>
-                    <p class="font-semibold text-white">Deal Created Successfully</p>
-                    <p class="text-gray-400 text-xs">Awaiting verified payment deposition into escrow holding vault.</p>
-                </div>
-                <div id="stepPaid" class="text-gray-500">
-                    <span id="dotPaid" class="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-gray-700 border-4 border-gray-800"></span>
-                    <p id="txtPaid" class="font-semibold">Payment Confirmed</p>
-                    <p class="text-xs">Funds are locked in escrow. Seller can safely hand over login instructions.</p>
-                </div>
+            <form id="escrowForm" onsubmit="initializeEscrowDeal(event)" class="space-y-5">
                 
-                <div id="timerContainer" class="hidden my-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex justify-between items-center text-sm">
-                    <div class="flex items-center gap-2 text-yellow-400 font-medium">
-                        <span>⏳ Inspection Window:</span>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Asset Type</label>
+                    <select id="assetType" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition text-xs">
+                        <option value="Gaming Account">Gaming Account (Free Fire, CODM, etc.)</option>
+                        <option value="Instagram">Instagram Profile</option>
+                        <option value="TikTok">TikTok Account</option>
+                        <option value="Facebook">Facebook Page/Profile</option>
+                    </select>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Trade Amount (NGN)</label>
+                    <div class="relative rounded-xl shadow-sm">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                            <span class="text-gray-500 text-xs font-medium">₦</span>
+                        </div>
+                        <input id="tradeAmount" type="number" required placeholder="5,000" class="w-full bg-gray-950 border border-gray-700 rounded-xl pl-8 pr-4 py-3 text-sm text-white focus:outline-none focus:border-yellow-500 transition">
                     </div>
-                    <div id="countdownClock" class="font-mono font-bold text-base text-white tracking-wider">--:--:--</div>
-                </div>
-                
-                <div id="stepReleased" class="text-gray-500">
-                    <span id="dotReleased" class="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-gray-700 border-4 border-gray-800"></span>
-                    <p id="txtReleased" class="font-semibold">Contract Settled</p>
-                    <p class="text-xs">Funds released to the seller's account balance registry.</p>
-                </div>
-            </div>
-
-            <div id="actionArea" class="pt-4 border-t border-gray-700 flex flex-col gap-3">
-                <p class="text-center text-xs text-gray-500">Loading available trade actions...</p>
-            </div>
-
-            <div class="mt-6 bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-xl">
-                <h4 class="text-sm font-bold text-gray-300 mb-3 flex items-center gap-2">💬 Secure Room Chat</h4>
-                
-                <div id="chatMessageWindow" class="bg-gray-950 rounded-xl p-3 h-48 overflow-y-auto space-y-3 text-xs border border-gray-800 flex flex-col">
-                    <p class="text-gray-600 text-center my-auto">No messages recorded in this room yet.</p>
+                    <div class="flex justify-between items-center px-1 pt-1 text-[11px]">
+                        <span class="text-gray-500">Escrow Fee (2%): <span id="feeDisplay" class="text-gray-300 font-medium">₦0</span></span>
+                        <span class="text-gray-400 font-medium">Total to Pay: <span id="totalDisplay" class="text-green-400 font-bold">₦0</span></span>
+                    </div>
                 </div>
 
-                <form id="chatForm" onsubmit="sendChatMessage(event)" class="mt-3 flex gap-2">
-                    <input id="chatInput" type="text" required placeholder="Type login details or message..." class="flex-1 bg-gray-950 border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-yellow-500 transition">
-                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold px-4 rounded-xl text-xs transition">
-                        Send
-                    </button>
-                </form>
-            </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Your Role</label>
+                    <select id="userRole" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition text-xs">
+                        <option value="buyer">I am the Buyer</option>
+                        <option value="seller">I am the Seller</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Your Email</label>
+                        <input id="userEmail" type="email" required placeholder="your@email.com" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-yellow-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Partner's Email</label>
+                        <input id="peerContact" type="email" required placeholder="trader@mail.com" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-yellow-500 transition">
+                    </div>
+                </div>
+
+                <div id="sellerBankSection" class="space-y-3 border-t border-gray-700 pt-5 mt-4">
+                    <h4 class="text-xs font-bold text-yellow-500 uppercase tracking-wider">Seller Payout Destination</h4>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Seller's Bank</label>
+                        <select id="bankCode" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-yellow-500 transition">
+                            <option value="058">GTBank</option>
+                            <option value="011">First Bank of Nigeria</option>
+                            <option value="033">United Bank for Africa (UBA)</option>
+                            <option value="057">Zenith Bank</option>
+                            <option value="044">Access Bank</option>
+                            <option value="070">Wema Bank</option>
+                            <option value="305">OPay</option>
+                            <option value="50211">Kuda Bank</option>
+                            <option value="101">Provadus Bank</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Seller's Account Number</label>
+                        <input id="accNumber" type="text" maxlength="10" placeholder="0123456789" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-yellow-500 transition">
+                    </div>
+                </div>
+
+                <button id="submitBtn" type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-3.5 px-4 rounded-xl shadow-lg transform active:scale-95 transition duration-150 mt-6 flex justify-center items-center gap-2 text-sm">
+                    Initialize Escrow Deal
+                </button>
+            </form>
         </div>
     </main>
 
     <script>
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
-        const PAYSTACK_KEY = 'pk_test_ae592ca17d3b0794152ccbc0118f89c55c90fc95';
-
+        
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const tradeId = urlParams.get('id');
+        const amountInput = document.getElementById('tradeAmount'); 
+        const feeDisplay = document.getElementById('feeDisplay');
+        const totalDisplay = document.getElementById('totalDisplay');
+        const roleSelect = document.getElementById('userRole');
+        const sellerBankSection = document.getElementById('sellerBankSection');
 
-        let tradeDetails = null;
-        let timerInterval = null; 
+        // 1. Live Fee Calculation Updates Engine
+        amountInput.addEventListener('input', () => {
+            const amount = parseFloat(amountInput.value) || 0;
+            const escrowFee = amount * 0.02; 
+            const totalAmount = amount + escrowFee;
 
-        if (!tradeId) {
-            alert("No trade ID found in URL link string!");
-            window.location.href = 'index.html';
-        } 
+            feeDisplay.innerText = `₦${escrowFee.toLocaleString()}`;
+            totalDisplay.innerText = `₦${totalAmount.toLocaleString()}`;
+        });
 
-        // 1. Fetch History once on page bootup
-        async function loadChatHistory() {
-            const windowContainer = document.getElementById('chatMessageWindow');
+        // 2. Role Interface Bank Toggle Engine Logic
+        roleSelect.addEventListener('change', () => {
+            if (roleSelect.value === 'buyer') {
+                sellerBankSection.classList.add('hidden');
+            } else {
+                sellerBankSection.classList.remove('hidden');
+            }
+        });
+
+        // 3. Initial Boot State Setup Force
+        if (roleSelect.value === 'buyer') {
+            sellerBankSection.classList.add('hidden');
+        }
+
+        // 4. Clean Single Submission Pipeline Engine Execution
+        async function initializeEscrowDeal(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
             
+            btn.disabled = true;
+            btn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Creating Contract...`;
+            
+            // Map the layout DOM IDs perfectly
+            const asset = document.getElementById('assetType').value;
+            const amount = parseInt(document.getElementById('tradeAmount').value) || 0;
+            const userEmailValue = document.getElementById('userEmail').value.trim().toLowerCase();
+            const peerEmailValue = document.getElementById('peerContact').value.trim().toLowerCase();
+            const userRoleValue = document.getElementById('userRole').value;
+            
+            let bankCodeValue = null;
+            let accountNumberValue = null;
+
+            if (userRoleValue === 'seller') {
+                bankCodeValue = document.getElementById('bankCode').value;
+                accountNumberValue = document.getElementById('accNumber').value.trim();
+            }
+            
+            // Map conditional dual-parameter identity values array
+            const buyerEmail = (userRoleValue === 'buyer') ? userEmailValue : peerEmailValue;
+            const sellerEmail = (userRoleValue === 'seller') ? userEmailValue : peerEmailValue;
+
+            // Execute database insertions cleanly with clean parameters
             const { data, error } = await supabaseClient
-                .from('messages')
-                .select('*')
-                .eq('trade_id', tradeId)
-                .order('created_at', { ascending: true });
+                .from('trade')
+                .insert([
+                    { 
+                        asset_type: asset, 
+                        amount: amount, 
+                        status: 'pending', 
+                        buyer_email: buyerEmail, 
+                        seller_email: sellerEmail,
+                        seller_bank_code: bankCodeValue,
+                        seller_account_number: accountNumberValue,
+                        seller_account_name: bankCodeValue ? 'Pending Verification' : null
+                    }
+                ])
+                .select();
 
             if (error) {
-                console.error("Chat fetch error:", error.message);
+                alert('Database Configuration Fault: ' + error.message);
+                btn.disabled = false;
+                btn.innerText = 'Initialize Escrow Deal';
                 return;
             }
 
             if (data && data.length > 0) {
-                windowContainer.innerHTML = ""; 
-                data.forEach(msg => appendMessageToUI(msg));
-                windowContainer.scrollTop = windowContainer.scrollHeight; 
-            }
-        }
-
-        // 2. Clear loader and append data cleanly
-        function appendMessageToUI(msg) {
-            const windowContainer = document.getElementById('chatMessageWindow');
-            
-            // Remove the default empty placeholder text if present
-            if (windowContainer.querySelector('.text-gray-600')) {
-                windowContainer.innerHTML = "";
-            }
-
-            const isSystem = msg.sender_email === 'System';
-            const msgColor = isSystem ? 'text-yellow-400 bg-yellow-500/5 border border-yellow-500/10' : 'text-gray-200 bg-gray-900/50';
-            
-            const msgElement = document.createElement('div');
-            msgElement.className = `p-2 rounded-lg text-[11px] leading-relaxed border border-gray-800 ${msgColor}`;
-            msgElement.innerHTML = `
-                <div class="flex justify-between items-center text-[10px] text-gray-500 font-mono mb-0.5">
-                    <span class="font-bold text-gray-400">${msg.sender_email}</span>
-                    <span>${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                </div>
-                <p class="break-all font-sans">${msg.message_text}</p>
-            `;
-            windowContainer.appendChild(msgElement);
-            windowContainer.scrollTop = windowContainer.scrollHeight;
-        }
-
-        // 3. LISTEN TO LIVE INSERTIONS (Realtime Pipeline)
-        function setupChatRealtimeListener() {
-            supabaseClient
-                .channel(`public-messages-room-${tradeId}`)
-                .on(
-                    'postgres_changes', 
-                    { 
-                        event: 'INSERT', 
-                        schema: 'public', 
-                        table: 'messages',
-                        filter: `trade_id=eq.${tradeId}`
-                    }, 
-                    (payload) => {
-                        console.log('🔔 Live Message Received:', payload.new);
-                        appendMessageToUI(payload.new);
-                    }
-                )
-                .subscribe((status) => {
-                    console.log(`📡 Chat Realtime Connection: ${status}`);
-                });
-        }
-
-        // 4. Send Message Event Execution
-        async function sendChatMessage(e) {
-            e.preventDefault();
-            const input = document.getElementById('chatInput');
-            const text = input.value.trim();
-            if (!text || !tradeDetails) return;
-
-            input.value = ""; // Clear immediately for seamless UX
-
-            let activeUserEmail = 'Guest/Partner';
-
-            // Verify or prompt identity
-            if (!localStorage.getItem('tradescrow_user_email')) {
-                const viewerEmail = prompt("Please enter your email to join the secure chat sync:", "");
-                if (viewerEmail) {
-                    localStorage.setItem('tradescrow_user_email', viewerEmail.trim().toLowerCase());
-                }
-            }
-
-            const savedEmail = localStorage.getItem('tradescrow_user_email');
-            if (savedEmail) {
-                activeUserEmail = savedEmail;
-            } else {
-                activeUserEmail = tradeDetails.buyer_email || 'Participant';
-            }
-
-            // Insert cleanly. The live pipeline handles appending it to the UI automatically!
-            const { error } = await supabaseClient
-                .from('messages')
-                .insert([{ 
-                    trade_id: tradeId, 
-                    sender_email: activeUserEmail, 
-                    message_text: text 
-                }]);
-
-            if (error) {
-                console.error("Failed to transmit message row:", error.message);
-            }
-        }
-
-        // Core Room Loading Data Operations Sequence
-        async function loadTradeRoom() {
-            console.log("Fetching record for ID:", tradeId);
-
-            const { data, error } = await supabaseClient
-                .from('trade')
-                .select('*')
-                .eq('id', tradeId);
-
-            if (error) {
-                console.error("Supabase Database Error:", error.message);
-                document.getElementById('actionArea').innerText = "Database connection error.";
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                console.error("No record found matching ID:", tradeId);
-                document.getElementById('actionArea').innerText = "Contract room not found or restricted.";
-                return;
-            }
-
-            tradeDetails = data[0];
-            renderUI(tradeDetails); 
-            setupRealtimeListener();
-            
-            // Fire layout operations
-            loadChatHistory();
-            setupChatRealtimeListener();
-        }
-
-        function setupRealtimeListener() {
-            document.getElementById('liveBadge').className = "text-xs bg-green-500/10 text-green-400 font-bold px-2.5 py-1 rounded-full border border-green-500/20";
-            document.getElementById('liveBadge').innerText = "Live Synced";
-
-            supabaseClient
-                .channel('schema-db-changes')
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trade', filter: `id=eq.${tradeId}` }, payload => {
-                    tradeDetails = payload.new;
-                    renderUI(tradeDetails);
-                })
-                .subscribe();
-        }
-
-        function renderUI(trade) {
-            document.getElementById('lblAsset').innerText = trade.asset_type;
-            document.getElementById('lblAmount').innerText = '₦' + trade.amount.toLocaleString();
-            document.getElementById('lblBuyer').innerText = trade.buyer_email;
-            document.getElementById('lblSeller').innerText = trade.seller_email;
-
-            const actions = document.getElementById('actionArea');
-            const timerContainer = document.getElementById('timerContainer');
-            actions.innerHTML = ""; 
-            
-            if (timerInterval) clearInterval(timerInterval); 
-
-            const viewerEmail = (localStorage.getItem('tradescrow_user_email') || '').trim().toLowerCase();
-            const isBuyer = viewerEmail === trade.buyer_email.toLowerCase();
-            const isSeller = viewerEmail === trade.seller_email.toLowerCase();
-
-            if (trade.status === 'pending') {
-                resetTimelineToPending();
-                timerContainer.classList.add('hidden'); 
+                const newTrade = data[0];
                 
-                if (isBuyer) {
-                    const baseAmount = parseFloat(trade.amount);
-                    const fee = baseAmount * 0.02;
-                    const totalWithFee = baseAmount + fee;
-                    actions.innerHTML = `<button onclick="processPaystackCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow transition">Deposit Secured Escrow (₦${totalWithFee.toLocaleString()})</button>`;
-                } else if (isSeller) {
-                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">⏳ Waiting for the buyer (${trade.buyer_email}) to pay the deposit into escrow holding vault. Do not hand over account logs yet.</div>`;
-                } else {
-                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Awaiting payment from buyer...</div>`;
-                }
-            } 
-            else if (trade.status === 'paid') {
-                setTimelineToPaid();
-                timerContainer.classList.remove('hidden');
+                // Keep the creator logged into their dashboard automatically
+                localStorage.setItem('tradescrow_user_email', userEmailValue);
                 
-                const targetTimestamp = trade.paid_at || trade.created_at;
-                startInspectionCountdown(targetTimestamp);
-
-                if (isBuyer) {
-                    actions.innerHTML = `
-                        <div class="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-xs text-yellow-400 mb-2 font-medium">⚠️ Check the chat area below. Verify account login custody matches terms before releasing funds.</div>
-                        <div class="flex gap-3">
-                            <button onclick="updateTradeStatus('released')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow transition text-sm">Release Funds to Seller</button>
-                            <button onclick="updateTradeStatus('disputed')" class="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold py-3 px-4 rounded-xl border border-red-500/20 transition text-sm">Raise Dispute</button>
-                        </div>`;
-                } else if (isSeller) {
-                    actions.innerHTML = `
-                        <div class="bg-green-600/10 border border-green-500/20 rounded-xl p-4 text-center text-xs text-green-400 font-medium">
-                            💰 Payment Confirmed inside Escrow! <br>
-                            <span class="text-gray-400 block mt-1">Drop the account email, password, or linking info in the secure chat box below so the buyer can verify it.</span>
-                        </div>`;
-                } else {
-                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Deal is funded. Verification phase active.</div>`;
-                }
-            } 
-            else if (trade.status === 'released') {
-                setTimelineToSettled();
-                timerContainer.classList.add('hidden'); 
-                actions.innerHTML = `<div class="bg-green-500/10 border border-green-500/20 text-green-400 font-semibold p-4 rounded-xl text-center text-sm">🔒 Transaction fully verified and payouts finalized successfully.</div>`;
-            }
-            else if (trade.status === 'disputed') {
-                setTimelineToDisputed();
-                timerContainer.classList.add('hidden'); 
-                actions.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 font-semibold p-4 rounded-xl text-center text-sm">🛑 Hold Order Placed. System Admin reviewing submitted trade logs.</div>`;
+                // Immediately route straight to the active trade room!
+                window.location.href = `room.html?id=${newTrade.id}`;
             }
         }
-
-        function startInspectionCountdown(createdAtTimestamp) {
-            const clockDisplay = document.getElementById('countdownClock');
-            if (!clockDisplay) return; 
-            
-            let formattedPaidAt = createdAtTimestamp.replace(" ", "T");
-            if (formattedPaidAt.includes("+")) {
-                formattedPaidAt = formattedPaidAt.split("+")[0];
-            }
-
-            const paymentTime = new Date(formattedPaidAt).getTime();
-            const inspectionDeadline = paymentTime + (24 * 60 * 60 * 1000);
-
-            if (timerInterval) clearInterval(timerInterval);
-
-            function updateClock() {
-                const now = new Date().getTime();
-                const distance = inspectionDeadline - now;
-
-                if (distance < 0) {
-                    clearInterval(timerInterval);
-                    clockDisplay.innerText = "EXPIRED";
-                    clockDisplay.className = "text-red-500 font-bold";
-                    
-                    if (tradeDetails && tradeDetails.status === 'paid') {
-                        console.log("Inspection window expired. Automatically releasing funds to seller...");
-                        updateTradeStatus('released');
-                    }
-                    return;
-                }
-
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                clockDisplay.innerText = 
-                    String(hours).padStart(2, '0') + ":" + 
-                    String(minutes).padStart(2, '0') + ":" + 
-                    String(seconds).padStart(2, '0');
-            }
-
-            updateClock(); 
-            timerInterval = setInterval(updateClock, 1000); 
-        }
-
-        function processPaystackCheckout() {
-            if (!tradeDetails) return;
-
-            const baseAmount = parseFloat(tradeDetails.amount); 
-            const platformFee = baseAmount * 0.02;
-            const finalBillableAmount = baseAmount + platformFee;
-            const totalInKobo = Math.round(finalBillableAmount * 100);
-
-            let handler = PaystackPop.setup({
-                key: PAYSTACK_KEY, 
-                email: tradeDetails.buyer_email,
-                amount: totalInKobo, 
-                currency: 'NGN',
-                callback: function(res) {
-                    updateTradeStatus('paid');
-                },
-                onClose: function() {
-                    alert('Transaction window closed before deposition was complete.');
-                }
-            });
-         handler.openIframe();
-        }
-
-        async function updateTradeStatus(newStatus) {
-            let updateData = { status: newStatus };
-            if (newStatus === 'paid') {
-                updateData.paid_at = new Date().toISOString();
-            }
-
-            const { error } = await supabaseClient.from('trade').update(updateData).eq('id', tradeId);
-            if (error) alert("Status adjustment failure: " + error.message);
-        }
-
-        function copyShareLink() {
-            const shareBtn = document.getElementById('shareBtn');
-            const currentUrl = window.location.href;
-
-            navigator.clipboard.writeText(currentUrl).then(() => {
-                shareBtn.innerText = "✅ Link Copied to Clipboard!";
-                shareBtn.classList.remove('bg-gray-700/50', 'text-gray-300', 'border-gray-600');
-                shareBtn.classList.add('bg-green-600/20', 'text-green-400', 'border-green-500/30');
-
-                setTimeout(() => {
-                    shareBtn.innerHTML = "📋 Copy Shareable Trade Link";
-                    shareBtn.classList.remove('bg-green-600/20', 'text-green-400', 'border-green-500/30');
-                    shareBtn.classList.add('bg-gray-700/50', 'text-gray-300', 'border-gray-600');
-                }, 2500);
-            }).catch(err => {
-                alert("Here is your link: " + currentUrl);
-            });
-        }
-
-        function resetTimelineToPending() {
-            document.getElementById('dotPaid').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-gray-700 border-4 border-gray-800";
-            document.getElementById('txtPaid').className = "font-semibold text-gray-500";
-            document.getElementById('dotReleased').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-gray-700 border-4 border-gray-800";
-            document.getElementById('txtReleased').className = "font-semibold text-gray-500";
-        }
-
-        function setTimelineToPaid() {
-            document.getElementById('dotPaid').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-yellow-500 border-4 border-gray-800 animate-pulse";
-            document.getElementById('txtPaid').className = "font-semibold text-yellow-500";
-            document.getElementById('dotReleased').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-gray-700 border-4 border-gray-800";
-            document.getElementById('txtReleased').className = "font-semibold text-gray-500";
-        }
-
-        function setTimelineToSettled() {
-            document.getElementById('dotPaid').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-500 border-4 border-gray-800";
-            document.getElementById('txtPaid').className = "font-semibold text-green-500";
-            document.getElementById('dotReleased').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-500 border-4 border-gray-800";
-            document.getElementById('txtReleased').className = "font-semibold text-green-400";
-            document.getElementById('txtReleased').innerText = "Contract Settled Successfully";
-        }
-
-        function setTimelineToDisputed() {
-            document.getElementById('dotPaid').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-red-500 border-4 border-gray-800";
-            document.getElementById('txtPaid').className = "font-semibold text-red-500";
-            document.getElementById('txtPaid').innerText = "Dispute Locked Action";
-        }
-
-        // Run immediately on page boot
-        loadTradeRoom();
     </script>
 </body>
-</html>
+        </html>
+    
