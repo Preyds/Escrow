@@ -99,7 +99,7 @@
             window.location.href = 'index.html';
         } 
 
-        // Core Chat Box Utility Script Architectures
+        // 1. Fetch History once on page bootup
         async function loadChatHistory() {
             const windowContainer = document.getElementById('chatMessageWindow');
             
@@ -121,8 +121,11 @@
             }
         }
 
+        // 2. Clear loader and append data cleanly
         function appendMessageToUI(msg) {
             const windowContainer = document.getElementById('chatMessageWindow');
+            
+            // Remove the default empty placeholder text if present
             if (windowContainer.querySelector('.text-gray-600')) {
                 windowContainer.innerHTML = "";
             }
@@ -143,132 +146,69 @@
             windowContainer.scrollTop = windowContainer.scrollHeight;
         }
 
-        async function sendChatMessage(e) {
-    e.preventDefault();
-    const input = document.getElementById('chatInput');
-    const text = input.value.trim();
-    if (!text || !tradeDetails) return;
-
-    input.value = ""; // Clear input bar immediately
-
-    // DETECT PERSONA:
-    // We check if the person typing matches the buyer or seller email.
-    // If a partner opens the shared link, we can identify them contextually.
-    let activeUserEmail = 'Guest/Partner';
-
-            // 1. Function to visually append new messages to your chat box UI
-function appendMessageToScreen(msg) {
-  const chatBox = document.getElementById('chat-box'); // Make sure this matches your HTML chat container ID
-  if (!chatBox) return;
-
-  const messageElement = document.createElement('div');
-  
-  // Styles based on sender_type (buyer vs seller)
-  messageElement.className = `p-3 my-2 rounded-lg max-w-[80%] ${
-    msg.sender_type === 'buyer' 
-      ? 'bg-blue-600 text-white ml-auto text-right' 
-      : 'bg-gray-200 text-gray-800 mr-auto text-left'
-  }`;
-  
-  messageElement.innerHTML = `
-    <p class="text-sm">${msg.message_text || msg.message}</p>
-    <span class="text-[10px] block opacity-75 mt-1">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-  `;
-  
-  chatBox.appendChild(messageElement);
-  
-  // Keep scroll locked to the bottom so users see new messages immediately
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-// 2. Fetch static history when the page loads
-async function loadChatHistory(currentTradeId) {
-  const { data: records, error } = await supabase
-    .from('messages') // Using your exact table name
-    .select('*')
-    .eq('trade_id', currentTradeId)
-    .order('created_at', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching history:', error.message);
-    return;
-  }
-
-  const chatBox = document.getElementById('chat-box');
-  if (chatBox) chatBox.innerHTML = ''; // Clear out old static HTML or loader
-  
-  records.forEach(msg => appendMessageToScreen(msg));
-}
-
-// 3. THE REALTIME CONNECTION WE JUST UNLOCKED IN THE DASHBOARD
-function listenToLiveChat(currentTradeId) {
-  supabase
-    .channel(`public-messages-room-${currentTradeId}`) // Unique socket channel identifier
-    .on(
-      'postgres_changes', 
-      { 
-        event: 'INSERT', // Watch strictly for new additions to the rows
-        schema: 'public', 
-        table: 'messages' // Using your exact table name
-      }, 
-      (payload) => {
-        console.log('🔔 Live Row Intercepted:', payload.new);
-        
-        // Safety: Only render if this database insertion belongs to the active trade link screen
-        if (payload.new.trade_id === currentTradeId) {
-          appendMessageToScreen(payload.new);
-        }
-      }
-    )
-    .subscribe((status) => {
-      console.log(`📡 Realtime sync status: ${status}`);
-    });
-}
-
-// 4. Fire the initialization sequence
-// (Ensure activeTradeId is parsed from your URL query parameters dynamically)
-const activeTradeId = new URLSearchParams(window.location.search).get('id') || "YOUR_FALLBACK_TRADE_ID"; 
-loadChatHistory(activeTradeId);
-listenToLiveChat(activeTradeId);
-            
-    
-    // Simple prompt fallback: If we don't know who is typing yet, we check localStorage
-    // or ask them quick to type their email so the system logs them correctly.
-    if (!localStorage.getItem('tradescrow_user_email')) {
-        const viewerEmail = prompt("Please enter your email to join the secure chat sync:", "");
-        if (viewerEmail) {
-            localStorage.setItem('tradescrow_user_email', viewerEmail.trim().toLowerCase());
-        }
-    }
-
-    const savedEmail = localStorage.getItem('tradescrow_user_email');
-    if (savedEmail) {
-        activeUserEmail = savedEmail;
-    } else {
-        // Fallback default based on trade records if they cancel the prompt
-        activeUserEmail = tradeDetails.buyer_email || 'Participant';
-    }
-
-    await supabaseClient
-        .from('messages')
-        .insert([{ 
-            trade_id: tradeId, 
-            sender_email: activeUserEmail, 
-            message_text: text 
-        }]);
-}
-
-
+        // 3. LISTEN TO LIVE INSERTIONS (Realtime Pipeline)
         function setupChatRealtimeListener() {
             supabaseClient
-                .channel('schema-messages-changes')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `trade_id=eq.${tradeId}` }, payload => {
-                    appendMessageToUI(payload.new);
-                })
-                .subscribe();
+                .channel(`public-messages-room-${tradeId}`)
+                .on(
+                    'postgres_changes', 
+                    { 
+                        event: 'INSERT', 
+                        schema: 'public', 
+                        table: 'messages',
+                        filter: `trade_id=eq.${tradeId}`
+                    }, 
+                    (payload) => {
+                        console.log('🔔 Live Message Received:', payload.new);
+                        appendMessageToUI(payload.new);
+                    }
+                )
+                .subscribe((status) => {
+                    console.log(`📡 Chat Realtime Connection: ${status}`);
+                });
         }
 
-        // Room Loading Data Operations Sequence
+        // 4. Send Message Event Execution
+        async function sendChatMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text || !tradeDetails) return;
+
+            input.value = ""; // Clear immediately for seamless UX
+
+            let activeUserEmail = 'Guest/Partner';
+
+            // Verify or prompt identity
+            if (!localStorage.getItem('tradescrow_user_email')) {
+                const viewerEmail = prompt("Please enter your email to join the secure chat sync:", "");
+                if (viewerEmail) {
+                    localStorage.setItem('tradescrow_user_email', viewerEmail.trim().toLowerCase());
+                }
+            }
+
+            const savedEmail = localStorage.getItem('tradescrow_user_email');
+            if (savedEmail) {
+                activeUserEmail = savedEmail;
+            } else {
+                activeUserEmail = tradeDetails.buyer_email || 'Participant';
+            }
+
+            // Insert cleanly. The live pipeline handles appending it to the UI automatically!
+            const { error } = await supabaseClient
+                .from('messages')
+                .insert([{ 
+                    trade_id: tradeId, 
+                    sender_email: activeUserEmail, 
+                    message_text: text 
+                }]);
+
+            if (error) {
+                console.error("Failed to transmit message row:", error.message);
+            }
+        }
+
+        // Core Room Loading Data Operations Sequence
         async function loadTradeRoom() {
             console.log("Fetching record for ID:", tradeId);
 
@@ -293,7 +233,7 @@ listenToLiveChat(activeTradeId);
             renderUI(tradeDetails); 
             setupRealtimeListener();
             
-            // Safe execution now that functions are cleanly declared above
+            // Fire layout operations
             loadChatHistory();
             setupChatRealtimeListener();
         }
@@ -312,81 +252,71 @@ listenToLiveChat(activeTradeId);
         }
 
         function renderUI(trade) {
-    document.getElementById('lblAsset').innerText = trade.asset_type;
-    document.getElementById('lblAmount').innerText = '₦' + trade.amount.toLocaleString();
-    document.getElementById('lblBuyer').innerText = trade.buyer_email;
-    document.getElementById('lblSeller').innerText = trade.seller_email;
+            document.getElementById('lblAsset').innerText = trade.asset_type;
+            document.getElementById('lblAmount').innerText = '₦' + trade.amount.toLocaleString();
+            document.getElementById('lblBuyer').innerText = trade.buyer_email;
+            document.getElementById('lblSeller').innerText = trade.seller_email;
 
-    const actions = document.getElementById('actionArea');
-    const timerContainer = document.getElementById('timerContainer');
-    actions.innerHTML = ""; 
-    
-    if (timerInterval) clearInterval(timerInterval); 
+            const actions = document.getElementById('actionArea');
+            const timerContainer = document.getElementById('timerContainer');
+            actions.innerHTML = ""; 
+            
+            if (timerInterval) clearInterval(timerInterval); 
 
-    // DETECT VISITOR IDENTITY
-    const viewerEmail = (localStorage.getItem('tradescrow_user_email') || '').trim().toLowerCase();
-    const isBuyer = viewerEmail === trade.buyer_email.toLowerCase();
-    const isSeller = viewerEmail === trade.seller_email.toLowerCase();
+            const viewerEmail = (localStorage.getItem('tradescrow_user_email') || '').trim().toLowerCase();
+            const isBuyer = viewerEmail === trade.buyer_email.toLowerCase();
+            const isSeller = viewerEmail === trade.seller_email.toLowerCase();
 
-    // --- STATUS: PENDING ---
-    if (trade.status === 'pending') {
-        resetTimelineToPending();
-        timerContainer.classList.add('hidden'); 
-        
-        if (isBuyer) {
-            // Buyer perspective: Show payment action button
-            const baseAmount = parseFloat(trade.amount);
-            const fee = baseAmount * 0.02;
-            const totalWithFee = baseAmount + fee;
-            actions.innerHTML = `<button onclick="processPaystackCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow transition">Deposit Secured Escrow (₦${totalWithFee.toLocaleString()})</button>`;
-        } else if (isSeller) {
-            // Seller perspective: Waiting text
-            actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">⏳ Waiting for the buyer (${trade.buyer_email}) to pay the deposit into escrow holding vault. Do not hand over account logs yet.</div>`;
-        } else {
-            // Generic third-party link perspective
-            actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Awaiting payment from buyer...</div>`;
+            if (trade.status === 'pending') {
+                resetTimelineToPending();
+                timerContainer.classList.add('hidden'); 
+                
+                if (isBuyer) {
+                    const baseAmount = parseFloat(trade.amount);
+                    const fee = baseAmount * 0.02;
+                    const totalWithFee = baseAmount + fee;
+                    actions.innerHTML = `<button onclick="processPaystackCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow transition">Deposit Secured Escrow (₦${totalWithFee.toLocaleString()})</button>`;
+                } else if (isSeller) {
+                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">⏳ Waiting for the buyer (${trade.buyer_email}) to pay the deposit into escrow holding vault. Do not hand over account logs yet.</div>`;
+                } else {
+                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Awaiting payment from buyer...</div>`;
+                }
+            } 
+            else if (trade.status === 'paid') {
+                setTimelineToPaid();
+                timerContainer.classList.remove('hidden');
+                
+                const targetTimestamp = trade.paid_at || trade.created_at;
+                startInspectionCountdown(targetTimestamp);
+
+                if (isBuyer) {
+                    actions.innerHTML = `
+                        <div class="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-xs text-yellow-400 mb-2 font-medium">⚠️ Check the chat area below. Verify account login custody matches terms before releasing funds.</div>
+                        <div class="flex gap-3">
+                            <button onclick="updateTradeStatus('released')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow transition text-sm">Release Funds to Seller</button>
+                            <button onclick="updateTradeStatus('disputed')" class="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold py-3 px-4 rounded-xl border border-red-500/20 transition text-sm">Raise Dispute</button>
+                        </div>`;
+                } else if (isSeller) {
+                    actions.innerHTML = `
+                        <div class="bg-green-600/10 border border-green-500/20 rounded-xl p-4 text-center text-xs text-green-400 font-medium">
+                            💰 Payment Confirmed inside Escrow! <br>
+                            <span class="text-gray-400 block mt-1">Drop the account email, password, or linking info in the secure chat box below so the buyer can verify it.</span>
+                        </div>`;
+                } else {
+                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Deal is funded. Verification phase active.</div>`;
+                }
+            } 
+            else if (trade.status === 'released') {
+                setTimelineToSettled();
+                timerContainer.classList.add('hidden'); 
+                actions.innerHTML = `<div class="bg-green-500/10 border border-green-500/20 text-green-400 font-semibold p-4 rounded-xl text-center text-sm">🔒 Transaction fully verified and payouts finalized successfully.</div>`;
+            }
+            else if (trade.status === 'disputed') {
+                setTimelineToDisputed();
+                timerContainer.classList.add('hidden'); 
+                actions.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 font-semibold p-4 rounded-xl text-center text-sm">🛑 Hold Order Placed. System Admin reviewing submitted trade logs.</div>`;
+            }
         }
-    } 
-    // --- STATUS: PAID ---
-    else if (trade.status === 'paid') {
-        setTimelineToPaid();
-        timerContainer.classList.remove('hidden');
-        
-        const targetTimestamp = trade.paid_at || trade.created_at;
-        startInspectionCountdown(targetTimestamp);
-
-        if (isBuyer) {
-            // Buyer perspective: Control the money release or dispute trigger
-            actions.innerHTML = `
-                <div class="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-xs text-yellow-400 mb-2 font-medium">⚠️ Check the chat area below. Verify account login custody matches terms before releasing funds.</div>
-                <div class="flex gap-3">
-                    <button onclick="updateTradeStatus('released')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow transition text-sm">Release Funds to Seller</button>
-                    <button onclick="updateTradeStatus('disputed')" class="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold py-3 px-4 rounded-xl border border-red-500/20 transition text-sm">Raise Dispute</button>
-                </div>`;
-        } else if (isSeller) {
-            // Seller perspective: Instructions to deliver inside chat logs
-            actions.innerHTML = `
-                <div class="bg-green-600/10 border border-green-500/20 rounded-xl p-4 text-center text-xs text-green-400 font-medium">
-                    💰 Payment Confirmed inside Escrow! <br>
-                    <span class="text-gray-400 block mt-1">Drop the account email, password, or linking info in the secure chat box below so the buyer can verify it.</span>
-                </div>`;
-        } else {
-            actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Deal is funded. Verification phase active.</div>`;
-        }
-    } 
-    // --- STATUS: RELEASED ---
-    else if (trade.status === 'released') {
-        setTimelineToSettled();
-        timerContainer.classList.add('hidden'); 
-        actions.innerHTML = `<div class="bg-green-500/10 border border-green-500/20 text-green-400 font-semibold p-4 rounded-xl text-center text-sm">🔒 Transaction fully verified and payouts finalized successfully.</div>`;
-    }
-    // --- STATUS: DISPUTED ---
-    else if (trade.status === 'disputed') {
-        setTimelineToDisputed();
-        timerContainer.classList.add('hidden'); 
-        actions.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 font-semibold p-4 rounded-xl text-center text-sm">🛑 Hold Order Placed. System Admin reviewing submitted trade logs.</div>`;
-    }
-}
 
         function startInspectionCountdown(createdAtTimestamp) {
             const clockDisplay = document.getElementById('countdownClock');
@@ -407,18 +337,16 @@ listenToLiveChat(activeTradeId);
                 const distance = inspectionDeadline - now;
 
                 if (distance < 0) {
-    clearInterval(timerInterval);
-    clockDisplay.innerText = "EXPIRED";
-    clockDisplay.className = "text-red-500 font-bold";
-    
-    // AUTO-RELEASE LOGIC:
-    // If the clock runs out and the status is still 'paid', force release the funds to the seller!
-    if (tradeDetails && tradeDetails.status === 'paid') {
-        console.log("Inspection window expired. Automatically releasing funds to seller...");
-        updateTradeStatus('released');
-    }
-    return;
-}
+                    clearInterval(timerInterval);
+                    clockDisplay.innerText = "EXPIRED";
+                    clockDisplay.className = "text-red-500 font-bold";
+                    
+                    if (tradeDetails && tradeDetails.status === 'paid') {
+                        console.log("Inspection window expired. Automatically releasing funds to seller...");
+                        updateTradeStatus('released');
+                    }
+                    return;
+                }
 
                 const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                 const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
@@ -454,7 +382,7 @@ listenToLiveChat(activeTradeId);
                     alert('Transaction window closed before deposition was complete.');
                 }
             });
-            handler.openIframe();
+         handler.openIframe();
         }
 
         async function updateTradeStatus(newStatus) {
