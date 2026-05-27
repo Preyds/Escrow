@@ -134,6 +134,51 @@
         }
 
         // 4. Form Submission Database Routing Handling
+        async function initializeEscrowDeal(e) {
+    e.preventDefault();
+    
+    // 1. Collect everything typed in the form
+    const assetType = document.getElementById('txtAssetType')?.value || 'Gaming Account';
+    // Using the input field ID from your layout
+    const amount = parseFloat(document.getElementById('txtAmount')?.value) || 5000; 
+    const viewerRole = document.getElementById('txtRole')?.value || 'buyer';
+    const yourEmail = document.getElementById('txtYourEmail')?.value.trim().toLowerCase();
+    const partnerEmail = document.getElementById('txtPartnerEmail')?.value.trim().toLowerCase();
+
+    // Route the emails properly based on selection
+    const buyerEmail = viewerRole === 'buyer' ? yourEmail : partnerEmail;
+    const sellerEmail = viewerRole === 'seller' ? yourEmail : partnerEmail;
+
+    console.log("Generating brand new contract row...");
+
+    // 2. Force a completely clean INSERT into Supabase
+    const { data, error } = await supabaseClient
+        .from('trade')
+        .insert([
+            {
+                asset_type: assetType,
+                amount: amount,
+                buyer_email: buyerEmail,
+                seller_email: sellerEmail,
+                status: 'pending'
+            }
+        ])
+        .select(); // This instantly gives us back the new ID from the database
+
+    if (error) {
+        alert("Failed to initialize contract: " + error.message);
+        return;
+    }
+
+    if (data && data.length > 0) {
+        const newTrade = data[0];
+        alert("Deal Room initialized instantly!");
+        
+        // 3. Jump straight into the specific room file with the fresh new ID!
+        window.location.href = `room.html?id=${newTrade.id}`;
+    }
+        }
+        
         async function handleFormSubmit(e) {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
