@@ -155,6 +155,82 @@
     // We check if the person typing matches the buyer or seller email.
     // If a partner opens the shared link, we can identify them contextually.
     let activeUserEmail = 'Guest/Partner';
+
+            // 1. Function to visually append new messages to your chat box UI
+function appendMessageToScreen(msg) {
+  const chatBox = document.getElementById('chat-box'); // Make sure this matches your HTML chat container ID
+  if (!chatBox) return;
+
+  const messageElement = document.createElement('div');
+  
+  // Styles based on sender_type (buyer vs seller)
+  messageElement.className = `p-3 my-2 rounded-lg max-w-[80%] ${
+    msg.sender_type === 'buyer' 
+      ? 'bg-blue-600 text-white ml-auto text-right' 
+      : 'bg-gray-200 text-gray-800 mr-auto text-left'
+  }`;
+  
+  messageElement.innerHTML = `
+    <p class="text-sm">${msg.message_text || msg.message}</p>
+    <span class="text-[10px] block opacity-75 mt-1">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+  `;
+  
+  chatBox.appendChild(messageElement);
+  
+  // Keep scroll locked to the bottom so users see new messages immediately
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// 2. Fetch static history when the page loads
+async function loadChatHistory(currentTradeId) {
+  const { data: records, error } = await supabase
+    .from('messages') // Using your exact table name
+    .select('*')
+    .eq('trade_id', currentTradeId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching history:', error.message);
+    return;
+  }
+
+  const chatBox = document.getElementById('chat-box');
+  if (chatBox) chatBox.innerHTML = ''; // Clear out old static HTML or loader
+  
+  records.forEach(msg => appendMessageToScreen(msg));
+}
+
+// 3. THE REALTIME CONNECTION WE JUST UNLOCKED IN THE DASHBOARD
+function listenToLiveChat(currentTradeId) {
+  supabase
+    .channel(`public-messages-room-${currentTradeId}`) // Unique socket channel identifier
+    .on(
+      'postgres_changes', 
+      { 
+        event: 'INSERT', // Watch strictly for new additions to the rows
+        schema: 'public', 
+        table: 'messages' // Using your exact table name
+      }, 
+      (payload) => {
+        console.log('🔔 Live Row Intercepted:', payload.new);
+        
+        // Safety: Only render if this database insertion belongs to the active trade link screen
+        if (payload.new.trade_id === currentTradeId) {
+          appendMessageToScreen(payload.new);
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log(`📡 Realtime sync status: ${status}`);
+    });
+}
+
+// 4. Fire the initialization sequence
+// (Ensure activeTradeId is parsed from your URL query parameters dynamically)
+const activeTradeId = new URLSearchParams(window.location.search).get('id') || "YOUR_FALLBACK_TRADE_ID"; 
+loadChatHistory(activeTradeId);
+listenToLiveChat(activeTradeId);
+            
     
     // Simple prompt fallback: If we don't know who is typing yet, we check localStorage
     // or ask them quick to type their email so the system logs them correctly.
