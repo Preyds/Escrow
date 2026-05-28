@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tradescrow - Secure Gateway</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-center items-center px-4">
+
+    <div class="max-w-md w-full bg-gray-800 border border-gray-700 rounded-2xl p-8 shadow-xl">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-yellow-500 tracking-wide">🎮 Tradescrow</h1>
+            <p class="text-gray-400 text-sm mt-2">Decentralized P2P Account Escrow Portal</p>
+        </div>
+
+        <form id="loginForm" onsubmit="handleAuth(event)" class="space-y-5">
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Enter Your Email Address</label>
+                <input id="userEmail" type="email" required placeholder="name@example.com" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-yellow-500 transition">
+                <p class="text-[11px] text-gray-500 mt-1.5">No password required. This email tracks your buyer/seller smart contracts instantly.</p>
+            </div>
+
+            <button type="submit" id="authBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-3.5 px-4 rounded-xl shadow-lg transition duration-150 text-sm flex justify-center items-center gap-2">
+                Access Live Dashboard →
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // Auto-redirect if already logged in
+        if (localStorage.getItem('tradescrow_user_email')) {
+            window.location.href = 'dashboard.html';
+        }
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            const emailInput = document.getElementById('userEmail').value.trim().toLowerCase();
+            const authBtn = document.getElementById('authBtn');
+
+            authBtn.disabled = true;
+            authBtn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Authenticating...`;
+
+            // Save session string locally
+            localStorage.setItem('tradescrow_user_email', emailInput);
+            
+            // Route straight into dashboard tracking workspace
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 800);
+        }
+    </script>
+</body>
+</html>
