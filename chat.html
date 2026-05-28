@@ -108,19 +108,35 @@
         }
 
         function listenToRealtimeChat() {
-            document.getElementById('liveBadge').innerText = "● Hub Connected";
-            
-            supabaseClient
-                .channel('public-global-messages')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'global_messages' }, payload => {
-                    renderMessageRow(payload.new);
-                })
-                .subscribe();
-        }
+    const liveBadge = document.getElementById('liveBadge');
+    liveBadge.innerText = "Connecting...";
 
-        // Initialize execution sequencing run
-        loadGlobalHistory();
-        listenToRealtimeChat();
+    // Explicitly target the table insertion stream cleanly
+    const chatChannel = supabaseClient
+        .channel('any-name-global-stream')
+        .on(
+            'postgres_changes', 
+            { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'global_messages' // 💡 Double check if your table name has an "s" at the end!
+            }, 
+            (payload) => {
+                console.log('⚡ New Global Message Broadcast Received:', payload.new);
+                renderMessageRow(payload.new);
+            }
+        )
+        .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                liveBadge.className = "text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 px-2.5 py-0.5 rounded-full font-bold";
+                liveBadge.innerText = "● Hub Connected";
+            } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                liveBadge.className = "text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-0.5 rounded-full font-bold";
+                liveBadge.innerText = "Disconnected";
+            }
+        });
+}
+
     </script>
 </body>
 </html>
