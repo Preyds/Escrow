@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tradescrow - Global Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Header Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-yellow-500 tracking-wide">💬 Global Hub Chat</h1>
+            <span id="liveBadge" class="text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 px-2.5 py-0.5 rounded-full font-bold">Connecting Pipeline...</span>
+        </div>
+    </nav>
+
+    <!-- Internal Routing Tabs Layout -->
+    <div class="max-w-4xl mx-auto w-full px-4 mt-4 grid grid-cols-2 gap-2">
+        <a href="dashboard.html" class="bg-gray-800/50 hover:bg-gray-800 text-gray-400 text-center py-2.5 rounded-xl font-bold text-xs border border-gray-700 transition">💼 My Escrow Trades</a>
+        <a href="chat.html" class="bg-gray-800 border border-yellow-500/30 text-yellow-500 text-center py-2.5 rounded-xl font-bold text-xs shadow-md">💬 Global Hub Chat</a>
+    </div>
+
+    <!-- Live Messenger Communication container wrapper -->
+    <main class="flex-1 max-w-4xl mx-auto w-full px-4 my-4 flex flex-col justify-between overflow-hidden">
+        <div id="globalChatWindow" class="flex-1 bg-gray-950 border border-gray-800 rounded-2xl p-4 overflow-y-auto space-y-4 mb-4 h-[calc(100vh-240px)] flex flex-col">
+            <p class="text-gray-600 text-xs text-center my-auto">Initializing universal global connection sync streams...</p>
+        </div>
+
+        <!-- Chat Input Action Form Section -->
+        <form id="globalChatForm" onsubmit="sendGlobalMessage(event)" class="flex gap-2">
+            <input id="globalInput" type="text" required placeholder="Ask a question or find traders safely..." class="flex-1 bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-yellow-500 transition">
+            <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold px-6 rounded-xl text-sm transition">
+                Send
+            </button>
+        </form>
+    </main>
+
+    <script>
+        const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const activeUser = localStorage.getItem('tradescrow_user_email');
+        if (!activeUser) {
+            window.location.href = 'index.html';
+        }
+
+        async function loadGlobalHistory() {
+            const chatBox = document.getElementById('globalChatWindow');
+            
+            const { data, error } = await supabaseClient
+                .from('global_messages')
+                .select('*')
+                .order('created_at', { ascending: true })
+                .limit(70);
+
+            if (error) {
+                chatBox.innerText = "Error syncing messages: " + error.message;
+                return;
+            }
+
+            chatBox.innerHTML = ""; // Clear loader
+            if (data && data.length > 0) {
+                data.forEach(msg => renderMessageRow(msg));
+            } else {
+                chatBox.innerHTML = `<p class="text-gray-600 text-xs text-center my-auto">Welcome to the hub! Type a message below to start the conversation.</p>`;
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function renderMessageRow(msg) {
+            const chatBox = document.getElementById('globalChatWindow');
+            if (chatBox.querySelector('.text-gray-600')) chatBox.innerHTML = "";
+
+            const isMe = msg.sender_email.toLowerCase() === activeUser.toLowerCase();
+            const msgBubble = document.createElement('div');
+            
+            msgBubble.className = `max-w-[85%] p-3 rounded-xl text-xs flex flex-col space-y-1 ${
+                isMe ? 'bg-yellow-500/10 text-gray-200 ml-auto border border-yellow-500/20' : 'bg-gray-900 border border-gray-800 text-gray-200'
+            }`;
+
+            msgBubble.innerHTML = `
+                <div class="flex justify-between items-center gap-6 font-mono text-[10px] text-gray-500">
+                    <span class="font-bold text-gray-400 break-all">${msg.sender_email}</span>
+                    <span>${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+                <p class="font-sans leading-relaxed break-all">${msg.message_text}</p>
+            `;
+            chatBox.appendChild(msgBubble);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function sendGlobalMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('globalInput');
+            const text = input.value.trim();
+            if(!text) return;
+
+            input.value = ""; // Instant UX clear
+
+            await supabaseClient.from('global_messages').insert([{
+                sender_email: activeUser,
+                message_text: text
+            }]);
+        }
+
+        function listenToRealtimeChat() {
+            document.getElementById('liveBadge').innerText = "● Hub Connected";
+            
+            supabaseClient
+                .channel('public-global-messages')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'global_messages' }, payload => {
+                    renderMessageRow(payload.new);
+                })
+                .subscribe();
+        }
+
+        // Initialize execution sequencing run
+        loadGlobalHistory();
+        listenToRealtimeChat();
+    </script>
+</body>
+</html>
