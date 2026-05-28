@@ -9,226 +9,121 @@
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen pb-12">
 
-    <nav class="bg-gray-800 border-b border-gray-700 p-4 shadow-md">
-        <div class="max-w-5xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <h1 class="text-xl font-bold text-yellow-500">🎮 Tradescrow</h1>
-                <span class="text-[10px] bg-yellow-500/10 text-yellow-400 font-mono px-2 py-0.5 rounded border border-yellow-500/20">PORTAL v1.1</span>
-            </div>
-            <div id="navUserArea" class="hidden items-center gap-4">
-                <span id="txtUserBadge" class="text-xs text-gray-400 font-mono bg-gray-950 px-3 py-1.5 rounded-xl border border-gray-800"></span>
-                <button onclick="handleLogout()" class="text-xs text-red-400 hover:text-red-300 font-medium transition">Logout</button>
+    <!-- Navigation Header -->
+    <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-yellow-500 tracking-wide">🎮 Dashboard</h1>
+            <div class="flex items-center gap-4">
+                <span id="userBadge" class="text-xs text-gray-400 border border-gray-700 px-3 py-1 rounded-xl bg-gray-950 font-mono">...</span>
+                <button onclick="handleLogout()" class="text-xs text-red-400 hover:text-red-500 font-semibold transition">Logout</button>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-5xl mx-auto px-4 mt-8">
-        
-        <div id="authGate" class="max-w-md mx-auto bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl mt-12">
-            <h3 class="text-lg font-bold text-gray-200 mb-2">Access Your Escrow Vault</h3>
-            <p class="text-gray-400 text-xs mb-4">Enter your registered trade email address to sync your active contracts, balances, and ongoing chat rooms.</p>
-            
-            <form onsubmit="handleAuthGate(event)" class="space-y-4">
-                <div>
-                    <label class="block text-[11px] text-gray-400 mb-1">Account Email Address</label>
-                    <input id="txtAuthEmail" type="email" required placeholder="e.g. trader@example.com" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-yellow-500 transition">
-                </div>
-                <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-2.5 px-4 rounded-xl text-xs font-sans transition shadow-lg">
-                    Sync Dashboard Terminal
-                </button>
-            </form>
+    <!-- App Features Navigation Tabs -->
+    <div class="max-w-4xl mx-auto px-4 mt-6 grid grid-cols-2 gap-2">
+        <a href="dashboard.html" class="bg-gray-800 border border-yellow-500/30 text-yellow-500 text-center py-2.5 rounded-xl font-bold text-xs shadow-md">💼 My Escrow Trades</a>
+        <a href="chat.html" class="bg-gray-800/50 hover:bg-gray-800 text-gray-400 text-center py-2.5 rounded-xl font-bold text-xs border border-gray-700 transition">💬 Global Hub Chat</a>
+    </div>
+
+    <!-- Main Workspace Dashboard content panel -->
+    <main class="max-w-4xl mx-auto px-4 mt-6">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-lg font-bold text-white">Your Escrow Agreements</h2>
+                <p class="text-xs text-gray-400">Track incoming and outgoing digital asset transactions.</p>
+            </div>
+            <a href="create.html" class="bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg">
+                + New Contract
+            </a>
         </div>
 
-        <div id="dashboardView" class="hidden space-y-6">
-            
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="bg-gray-800 border border-gray-700 rounded-xl p-4 shadow flex flex-col justify-between">
-                    <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Secured Escrow Volume</span>
-                    <span id="statVolume" class="text-xl font-bold text-green-400 mt-2">₦0</span>
-                </div>
-                <div class="bg-gray-800 border border-gray-700 rounded-xl p-4 shadow flex flex-col justify-between">
-                    <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Active Inspections</span>
-                    <span id="statActive" class="text-xl font-bold text-yellow-500 mt-2">0 Orders</span>
-                </div>
-                <div class="bg-gray-800 border border-gray-700 rounded-xl p-4 shadow flex flex-col justify-between">
-                    <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Completed Swaps</span>
-                    <span id="statCompleted" class="text-xl font-bold text-blue-400 mt-2">0 Trades</span>
-                </div>
+        <!-- Dynamic List Container Box -->
+        <div id="contractsList" class="space-y-4">
+            <div class="text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl">
+                <span class="animate-spin inline-block w-6 h-6 border-2 border-yellow-500 border-t-transparent rounded-full mb-2"></span>
+                <p class="text-xs text-gray-400">Querying live contract data registry...</p>
             </div>
-
-            <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl">
-                <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6">
-                   <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6">
-    <div>
-        <h3 class="text-base font-bold text-gray-200">Your Trade Ledger</h3>
-        <p class="text-gray-400 text-xs">Real-time breakdown of transactions tied to your user identifier profile.</p>
-    </div>
-    <a href="create.html" class="inline-flex justify-center bg-gray-700 hover:bg-gray-600 text-gray-200 font-semibold py-2 px-4 rounded-xl text-xs border border-gray-600 transition">
-        ➕ Create New Escrow Contract
-    </a>
-</div>
-
-
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead>
-                            <tr class="border-b border-gray-700 text-gray-500 font-mono tracking-wider">
-                                <th class="pb-3 font-semibold">ASSET SPECIFICATION</th>
-                                <th class="pb-3 font-semibold">YOUR ROLE</th>
-                                <th class="pb-3 font-semibold">TOTAL VALUATION</th>
-                                <th class="pb-3 font-semibold">SYSTEM STATUS</th>
-                                <th class="pb-3 font-semibold text-right">ACTION</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tradeLedgerTableBody" class="divide-y divide-gray-800 text-gray-300">
-                            <tr>
-                                <td colspan="5" class="py-8 text-center text-gray-500 font-sans">Querying real-time ledger pipeline matrix...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
         </div>
     </main>
 
     <script>
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
-        
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        let userEmail = localStorage.getItem('tradescrow_user_email');
 
-        // Check view state initialization on screen boot
-        function initDashboard() {
-            const authGate = document.getElementById('authGate');
-            const dashboardView = document.getElementById('dashboardView');
-            const navUserArea = document.getElementById('navUserArea');
-
-            if (!userEmail) {
-                authGate.classList.remove('hidden');
-                dashboardView.classList.add('hidden');
-                navUserArea.classList.add('hidden');
-            } else {
-                authGate.classList.add('hidden');
-                dashboardView.classList.remove('hidden');
-                navUserArea.classList.remove('hidden');
-                navUserArea.classList.add('flex');
-                document.getElementById('txtUserBadge').innerText = userEmail;
-                
-                fetchUserTrades();
-            }
+        const activeUser = localStorage.getItem('tradescrow_user_email');
+        if (!activeUser) {
+            window.location.href = 'index.html';
+        } else {
+            document.getElementById('userBadge').innerText = activeUser;
         }
 
-        // Handle session identity injection
-        function handleAuthGate(e) {
-            e.preventDefault();
-            const emailInput = document.getElementById('txtAuthEmail').value.trim().toLowerCase();
-            if(emailInput) {
-                localStorage.setItem('tradescrow_user_email', emailInput);
-                userEmail = emailInput;
-                initDashboard();
-            }
-        }
+        async function fetchUserContracts() {
+            const listContainer = document.getElementById('contractsList');
 
-        function handleLogout() {
-            localStorage.removeItem('tradescrow_user_email');
-            userEmail = null;
-            initDashboard();
-        }
-
-        // Fetch row data matching dual-parameter intersection filters
-        async function fetchUserTrades() {
-            const tbody = document.getElementById('tradeLedgerTableBody');
-            
-            // Core Supabase Dual Role lookup using .or() filter logic
+            // Query trades where user email matches buyer OR seller fields
             const { data, error } = await supabaseClient
                 .from('trade')
                 .select('*')
-                .or(`buyer_email.eq.${userEmail},seller_email.eq.${userEmail}`)
+                .or(`buyer_email.eq.${activeUser},seller_email.eq.${activeUser}`)
                 .order('created_at', { ascending: false });
 
             if (error) {
-                console.error("Dashboard database lookup exception:", error.message);
-                tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-red-400 font-medium">Failed to retrieve ledger updates.</td></tr>`;
+                listContainer.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center">Sync Error: ${error.message}</div>`;
                 return;
             }
 
             if (!data || data.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="py-12 text-center text-gray-500 font-sans">
-                            <p class="text-sm font-medium mb-1">No contracts registered under this email address.</p>
-                            <p class="text-[11px] text-gray-600">Once you initiate a swap or get sent an invitation room link, it will settle here.</p>
-                        </td>
-                    </tr>
-                `;
-                calculateMetrics([]);
+                listContainer.innerHTML = `
+                    <div class="text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl px-4">
+                        <p class="text-sm font-semibold text-gray-300">No active contracts found</p>
+                        <p class="text-xs text-gray-500 mt-1 mb-4">You haven't initialized or joined any escrow deals yet.</p>
+                        <a href="create.html" class="inline-block bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs px-4 py-2 rounded-xl border border-gray-600 transition">Create Your First Contract</a>
+                    </div>`;
                 return;
             }
 
-            tbody.innerHTML = "";
-            calculateMetrics(data);
-
+            listContainer.innerHTML = ""; // Clear existing layout loader templates
+            
             data.forEach(trade => {
-                const isBuyer = trade.buyer_email.toLowerCase() === userEmail;
+                const isBuyer = trade.buyer_email.toLowerCase() === activeUser.toLowerCase();
+                const roleBadge = isBuyer ? '<span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Buyer</span>' : '<span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Seller</span>';
                 
-                // Set Up clean UI parameters
-                let roleBadge = isBuyer 
-                    ? `<span class="bg-blue-500/10 text-blue-400 font-mono px-2 py-0.5 rounded border border-blue-500/20 text-[10px]">BUYER</span>`
-                    : `<span class="bg-purple-500/10 text-purple-400 font-mono px-2 py-0.5 rounded border border-purple-500/20 text-[10px]">SELLER</span>`;
+                let statusBadge = '';
+                if(trade.status === 'pending') statusBadge = '<span class="text-yellow-500 font-medium">Awaiting Deposit</span>';
+                if(trade.status === 'paid') statusBadge = '<span class="text-green-400 font-medium animate-pulse">🔒 Escrow Locked</span>';
+                if(trade.status === 'released') statusBadge = '<span class="text-gray-400 font-medium">Settle Closed</span>';
+                if(trade.status === 'disputed') statusBadge = '<span class="text-red-400 font-bold">🛑 Disputed Order</span>';
 
-                let statusBadge = "";
-                if (trade.status === 'pending') {
-                    statusBadge = `<span class="bg-gray-700 text-gray-300 font-bold px-2 py-0.5 rounded text-[10px] tracking-wide">PENDING DEPOSIT</span>`;
-                } else if (trade.status === 'paid') {
-                    statusBadge = `<span class="bg-yellow-500 text-gray-950 font-bold px-2 py-0.5 rounded text-[10px] tracking-wide animate-pulse">INSPECTION</span>`;
-                } else if (trade.status === 'released') {
-                    statusBadge = `<span class="bg-green-600 text-white font-bold px-2 py-0.5 rounded text-[10px] tracking-wide">SETTLED</span>`;
-                } else if (trade.status === 'disputed') {
-                    statusBadge = `<span class="bg-red-600 text-white font-bold px-2 py-0.5 rounded text-[10px] tracking-wide">DISPUTED</span>`;
-                }
-
-                const tr = document.createElement('tr');
-                tr.className = "border-b border-gray-800 hover:bg-gray-700/20 transition";
-                tr.innerHTML = `
-                    <td class="py-3.5 font-medium text-white max-w-[150px] truncate">${trade.asset_type}</td>
-                    <td class="py-3.5">${roleBadge}</td>
-                    <td class="py-3.5 font-mono text-green-400 font-medium">₦${trade.amount.toLocaleString()}</td>
-                    <td class="py-3.5">${statusBadge}</td>
-                    <td class="py-3.5 text-right">
-                        <a href="create.html?id=${trade.id}" class="inline-block bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold px-3 py-1.5 rounded-lg text-[11px] transition shadow">
-                            Enter Room →
-                        </a>
-                    </td>
+                const card = document.createElement('div');
+                card.className = "bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-md hover:border-gray-600 transition cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4";
+                card.onclick = () => window.location.href = `room.html?id=${trade.id}`;
+                
+                card.innerHTML = `
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-white text-sm">${trade.asset_type}</h3>
+                            ${roleBadge}
+                        </div>
+                        <p class="text-xs text-gray-400 font-mono break-all">Partner: ${isBuyer ? trade.seller_email : trade.buyer_email}</p>
+                    </div>
+                    <div class="flex sm:flex-col justify-between items-end w-full sm:w-auto border-t sm:border-0 border-gray-700/50 pt-2 sm:pt-0">
+                        <span class="text-sm font-bold text-green-400">₦${trade.amount.toLocaleString()}</span>
+                        <span class="text-xs">${statusBadge}</span>
+                    </div>
                 `;
-                tbody.appendChild(tr);
+                listContainer.appendChild(card);
             });
         }
 
-        // Metrics engine computation calculations
-        function calculateMetrics(trades) {
-            let totalVolume = 0;
-            let activeInspections = 0;
-            let completedSwaps = 0;
-
-            trades.forEach(t => {
-                if (t.status === 'paid') activeInspections++;
-                if (t.status === 'released') {
-                    completedSwaps++;
-                    totalVolume += parseFloat(t.amount);
-                }
-            });
-
-            document.getElementById('statVolume').innerText = '₦' + totalVolume.toLocaleString();
-            document.getElementById('statActive').innerText = activeInspections + (activeInspections === 1 ? ' Order' : ' Orders');
-            document.getElementById('statCompleted').innerText = completedSwaps + (completedSwaps === 1 ? ' Trade' : ' Trades');
+        function handleLogout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
         }
 
-        // Boot system dashboard initialization engine instantly
-        loadTradeRoom = initDashboard; 
-        initDashboard();
+        // Run collection loops automatically at launch
+        fetchUserContracts();
     </script>
 </body>
-  </html>
-  
+</html>
