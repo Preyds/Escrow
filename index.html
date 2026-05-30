@@ -7,25 +7,50 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-center items-center px-4">
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-center items-center px-4 py-12">
 
-    <div class="max-w-md w-full bg-gray-800 border border-gray-700 rounded-2xl p-8 shadow-xl">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-extrabold text-yellow-500 tracking-wide">🎮 Tradescrow</h1>
-            <p class="text-gray-400 text-sm mt-2">Decentralized P2P Account Escrow Portal</p>
-        </div>
-
-        <form id="loginForm" onsubmit="handleAuth(event)" class="space-y-5">
-            <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Enter Your Email Address</label>
-                <input id="userEmail" type="email" required placeholder="name@example.com" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-yellow-500 transition">
-                <p class="text-[11px] text-gray-500 mt-1.5">No password required. This email tracks your buyer/seller smart contracts instantly.</p>
+    <div class="max-w-md w-full space-y-6">
+        
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-8 shadow-xl">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-extrabold text-yellow-500 tracking-wide">🎮 Tradescrow</h1>
+                <p class="text-gray-400 text-sm mt-2">Decentralized P2P Account Escrow Portal</p>
             </div>
 
-            <button type="submit" id="authBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-3.5 px-4 rounded-xl shadow-lg transition duration-150 text-sm flex justify-center items-center gap-2">
-                Access Live Dashboard →
-            </button>
-        </form>
+            <form id="loginForm" onsubmit="handleAuth(event)" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Enter Your Email Address</label>
+                    <input id="userEmail" type="email" required placeholder="name@example.com" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-yellow-500 transition">
+                    <p class="text-[11px] text-gray-500 mt-1.5">No password required. This email tracks your buyer/seller smart contracts instantly.</p>
+                </div>
+
+                <button type="submit" id="authBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-3.5 px-4 rounded-xl shadow-lg transition duration-150 text-sm flex justify-center items-center gap-2">
+                    Access Live Dashboard →
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-gray-800/60 border border-gray-700/70 rounded-2xl p-5 shadow-lg">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-yellow-500 mb-3 flex items-center gap-2">
+                📖 New to Tradescrow? Watch Tutorial
+            </h3>
+            
+            <div class="relative w-full aspect-video rounded-xl overflow-hidden border border-gray-950 bg-gray-950 shadow-inner">
+                <iframe 
+                    class="absolute top-0 left-0 w-full h-full"
+                    src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
+                    title="Tradescrow Platform Tutorial" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    allowfullscreen>
+                 iframe>
+            </div>
+            
+            <p class="text-[11px] text-gray-400 mt-2.5 leading-relaxed text-center">
+                Learn how to initialize a contract, fund the escrow vault, and release payments safely in less than 60 seconds.
+            </p>
+        </div>
+
     </div>
 
     <script>
