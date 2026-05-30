@@ -54,6 +54,29 @@
     </main>
 
     <script>
+// Add this exact block at the very top of your Admin panel JavaScript script tags
+(function verifyAdminAccess() {
+    const adminSessionKey = "tradescrow_admin_auth_token";
+    let currentToken = sessionStorage.getItem(adminSessionKey);
+
+    // 💡 Choose your unique secure admin pin code below (Replace '7709' with whatever you want)
+    const SECRET_ADMIN_PIN = "7709"; 
+
+    if (!currentToken || currentToken !== btoa(SECRET_ADMIN_PIN)) {
+        const adminInput = prompt("🔒 Restricted Access: Enter Master Administrator PIN:");
+        
+        if (adminInput === SECRET_ADMIN_PIN) {
+            // Store a basic encrypted token string inside session memory so you don't keep getting prompted
+            sessionStorage.setItem(adminSessionKey, btoa(SECRET_ADMIN_PIN));
+            alert("Access granted. Welcome back, Administrator.");
+        } else {
+            alert("Unauthorized access detected. Redirecting to terminal dashboard...");
+            window.location.href = "dashboard.html";
+            throw new Error("Admin authorization handshake aborted.");
+        }
+    }
+})();
+
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
