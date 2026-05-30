@@ -60,7 +60,7 @@
     let currentToken = sessionStorage.getItem(adminSessionKey);
 
     // 💡 Choose your unique secure admin pin code below (Replace '7709' with whatever you want)
-    const SECRET_ADMIN_PIN = "7709"; 
+    const SECRET_ADMIN_PIN = "0852"; 
 
     if (!currentToken || currentToken !== btoa(SECRET_ADMIN_PIN)) {
         const adminInput = prompt("🔒 Restricted Access: Enter Master Administrator PIN:");
