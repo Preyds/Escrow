@@ -9,6 +9,7 @@
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen pb-12">
 
+    <!-- Navigation Header -->
     <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <h1 class="text-xl font-bold text-yellow-500 tracking-wide">🎮 Dashboard</h1>
@@ -19,11 +20,13 @@
         </div>
     </nav>
 
+    <!-- App Features Navigation Tabs -->
     <div class="max-w-4xl mx-auto px-4 mt-6 grid grid-cols-2 gap-2">
         <a href="dashboard.html" class="bg-gray-800 border border-yellow-500/30 text-yellow-500 text-center py-2.5 rounded-xl font-bold text-xs shadow-md">💼 My Escrow Trades</a>
         <a href="chat.html" class="bg-gray-800/50 hover:bg-gray-800 text-gray-400 text-center py-2.5 rounded-xl font-bold text-xs border border-gray-700 transition">💬 Global Hub Chat</a>
     </div>
 
+    <!-- Main Workspace Dashboard content panel -->
     <main class="max-w-4xl mx-auto px-4 mt-6">
         <div class="flex justify-between items-center mb-6">
             <div>
@@ -35,6 +38,7 @@
             </a>
         </div>
 
+        <!-- Dynamic List Container Box -->
         <div id="contractsList" class="space-y-4">
             <div class="text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl">
                 <span class="animate-spin inline-block w-6 h-6 border-2 border-yellow-500 border-t-transparent rounded-full mb-2"></span>
@@ -43,79 +47,15 @@
         </div>
     </main>
 
-                            <span class="text-xs">${statusBadge}</span>
-                    </div>
-    <script>
-        // 1. Core Supabase Setup
-        const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
-
-        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : window.supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // 2. Security Gatekeeper Check
-        async function verifyDashboardAccess() {
-            try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                
-                if (!session || error) {
-                    // No active secure session? Send them straight back to index.html
-                    localStorage.removeItem('tradescrow_user_email');
-                    window.location.href = 'index.html';
-                } else {
-                    // Valid User logged in!
-                    const userEmail = session.user.email;
-                    localStorage.setItem('tradescrow_user_email', userEmail);
-                    document.getElementById('userBadge').innerText = userEmail;
-                    
-                    // Fetch this user's data from database table
-                    fetchUserContracts(userEmail);
-                }
-            } catch (err) {
-                console.error("Dashboard security error:", err);
-                window.location.href = 'index.html';
-            }
-        }
-
-        // 3. Fetch Contracts from Database Table
-        async function fetchUserContracts(activeUser) {
-            const listContainer = document.getElementById('contractsList');
-
-            const { data, error } = await supabase
-                .from('trade')
-                .select('*')
-                .or(`buyer_email.eq.${activeUser},seller_email.eq.${activeUser}`)
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                listContainer.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center">Sync Error: ${error.message}</div>`;
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                listContainer.innerHTML = `
-                    <div class="text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl px-4">
-                        <p class="text-sm font-semibold text-gray-300">No active contracts found</p>
-                        <p class="text-xs text-gray-500 mt-1 mb-4">You haven't initialized or joined any escrow deals yet.</p>
-                        <a href="create.html" class="inline-block bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs px-4 py-2 rounded-xl border border-gray-600 transition">Create Your First Contract</a>
-                    </div>`;
-                return;
-            }
-
-            listContainer.innerHTML = ""; // Clear loader spinner
     <script>
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
-        
-        const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : window.supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Instantly read the email saved in local memory
         const activeUser = localStorage.getItem('tradescrow_user_email');
-        
         if (!activeUser) {
-            // No email found? Boot back to login
             window.location.href = 'index.html';
         } else {
-            // Email found! Show it on the dashboard badge immediately
             document.getElementById('userBadge').innerText = activeUser;
         }
 
@@ -144,7 +84,7 @@
                 return;
             }
 
-            listContainer.innerHTML = ""; // Clear loader templates
+            listContainer.innerHTML = ""; // Clear existing layout loader templates
             
             data.forEach(trade => {
                 const isBuyer = trade.buyer_email.toLowerCase() === activeUser.toLowerCase();
@@ -182,9 +122,8 @@
             window.location.href = 'index.html';
         }
 
-        // Run data collection loops automatically at launch
+        // Run collection loops automatically at launch
         fetchUserContracts();
     </script>
-    
 </body>
 </html>
