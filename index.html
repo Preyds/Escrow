@@ -54,49 +54,50 @@
     </div>
 
     <script>
-    // 1. Database Connection Strings
-    const supabaseUrl = "https://auxenvjsutqwuntfhsst.supabase.co";
-    const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI";
-    
-    // Direct initialization using the standard global library injection
-    const supabase = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseAnonKey) : window.supabaseClient.createClient(supabaseUrl, supabaseAnonKey);
-
-    // 2. Handle Form Interaction
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault(); // Stop mobile browser page flash reload
+        <script>
+        // 1. Setup Database Connection Info
+        const supabaseUrl = "https://auxenvjsutqwuntfhsst.supabase.co";
+        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI";
         
-        const emailInput = document.getElementById('userEmail').value.trim().toLowerCase();
-        const authBtn = document.getElementById('authBtn');
+        // Initialize carefully handling different browser loading speeds
+        const supabase = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseAnonKey) : window.supabaseClient.createClient(supabaseUrl, supabaseAnonKey);
 
-        // Instantly switch button to loading state
-        authBtn.disabled = true;
-        authBtn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Sending Secure Link...`;
+        // 2. Handle Login When Form is Submitted
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Prevents phone browser from breaking/reloading page
+            
+            const emailInput = document.getElementById('userEmail').value.trim().toLowerCase();
+            const authBtn = document.getElementById('authBtn');
 
-        try {
-            // Trigger Supabase Passwordless Login Request
-            const { data, error } = await supabase.auth.signInWithOtp({
-                email: emailInput,
-                options: {
-                    // Instructs Supabase where to open up once the Gmail token is verified
-                    emailRedirectTo: window.location.origin + '/dashboard.html'
+            // Set button to loading state immediately
+            authBtn.disabled = true;
+            authBtn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Sending Link...`;
+
+            try {
+                // Request Passwordless OTP Magic Link from Supabase
+                const { data, error } = await supabase.auth.signInWithOtp({
+                    email: emailInput,
+                    options: {
+                        // Tells Supabase where to redirect the user after clicking the link
+                        emailRedirectTo: window.location.origin + '/dashboard.html'
+                    }
+                });
+
+                if (error) {
+                    alert("🔒 Supabase Error: " + error.message);
+                    authBtn.disabled = false;
+                    authBtn.innerText = "Access Live Dashboard →";
+                } else {
+                    alert("📬 Check your Gmail app! A secure login link has been sent to your inbox.");
+                    authBtn.innerText = "Check Your Gmail Inbox...";
                 }
-            });
-
-            if (error) {
-                alert("🔒 Configuration Alert: " + error.message);
+            } catch (err) {
+                alert("Connection error: " + err.message);
                 authBtn.disabled = false;
                 authBtn.innerText = "Access Live Dashboard →";
-            } else {
-                alert("📬 Success! Check your Gmail app inbox for your secure entrance link.");
-                authBtn.innerText = "Check Your Gmail Inbox...";
             }
-        } catch (err) {
-            alert("Network timeout: " + err.message);
-            authBtn.disabled = false;
-            authBtn.innerText = "Access Live Dashboard →";
-        }
-    });
-</script>
+        });
+    </script>
 
 </body>
 </html>
