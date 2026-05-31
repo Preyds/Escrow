@@ -43,29 +43,31 @@
         </div>
     </main>
 
+                            <span class="text-xs">${statusBadge}</span>
+                    </div>
     <script>
-        // 1. Setup Database Connection Variables First
+        // 1. Core Supabase Setup
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
 
         const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : window.supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // 2. Check if user has a verified Supabase login session
+        // 2. Security Gatekeeper Check
         async function verifyDashboardAccess() {
             try {
                 const { data: { session }, error } = await supabase.auth.getSession();
                 
                 if (!session || error) {
-                    // No session found? Wipe cookies and send them back to login page
+                    // No active secure session? Send them straight back to index.html
                     localStorage.removeItem('tradescrow_user_email');
                     window.location.href = 'index.html';
                 } else {
-                    // Authenticated! Put the logged-in email address onto your screen
+                    // Valid User logged in!
                     const userEmail = session.user.email;
                     localStorage.setItem('tradescrow_user_email', userEmail);
                     document.getElementById('userBadge').innerText = userEmail;
                     
-                    // Now execute your contract collection query cleanly using that email
+                    // Fetch this user's data from database table
                     fetchUserContracts(userEmail);
                 }
             } catch (err) {
@@ -74,11 +76,10 @@
             }
         }
 
-        // 3. Fetch Contracts from Database
+        // 3. Fetch Contracts from Database Table
         async function fetchUserContracts(activeUser) {
             const listContainer = document.getElementById('contractsList');
 
-            // Query trades where user email matches buyer OR seller fields
             const { data, error } = await supabase
                 .from('trade')
                 .select('*')
@@ -100,7 +101,7 @@
                 return;
             }
 
-            listContainer.innerHTML = ""; // Clear existing loader animations
+            listContainer.innerHTML = ""; // Clear loader spinner
             
             data.forEach(trade => {
                 const isBuyer = trade.buyer_email.toLowerCase() === activeUser.toLowerCase();
@@ -133,12 +134,12 @@
             });
         }
 
-        // 4. Secure Network Logout
+        // 4. Handle Logout Safely
         async function handleLogout() {
             try {
                 await supabase.auth.signOut();
             } catch (err) {
-                console.log("Signout context dropped:", err);
+                console.log(err);
             }
             localStorage.clear();
             window.location.href = 'index.html';
@@ -146,6 +147,7 @@
 
         // Run security protection check immediately on launch
         verifyDashboardAccess();
-    </script>
+            </script>
+    
 </body>
 </html>
