@@ -102,6 +102,49 @@
             }
 
             listContainer.innerHTML = ""; // Clear loader spinner
+    <script>
+        const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
+        
+        const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : window.supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Instantly read the email saved in local memory
+        const activeUser = localStorage.getItem('tradescrow_user_email');
+        
+        if (!activeUser) {
+            // No email found? Boot back to login
+            window.location.href = 'index.html';
+        } else {
+            // Email found! Show it on the dashboard badge immediately
+            document.getElementById('userBadge').innerText = activeUser;
+        }
+
+        async function fetchUserContracts() {
+            const listContainer = document.getElementById('contractsList');
+
+            // Query trades where user email matches buyer OR seller fields
+            const { data, error } = await supabaseClient
+                .from('trade')
+                .select('*')
+                .or(`buyer_email.eq.${activeUser},seller_email.eq.${activeUser}`)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                listContainer.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center">Sync Error: ${error.message}</div>`;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl px-4">
+                        <p class="text-sm font-semibold text-gray-300">No active contracts found</p>
+                        <p class="text-xs text-gray-500 mt-1 mb-4">You haven't initialized or joined any escrow deals yet.</p>
+                        <a href="create.html" class="inline-block bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs px-4 py-2 rounded-xl border border-gray-600 transition">Create Your First Contract</a>
+                    </div>`;
+                return;
+            }
+
+            listContainer.innerHTML = ""; // Clear loader templates
             
             data.forEach(trade => {
                 const isBuyer = trade.buyer_email.toLowerCase() === activeUser.toLowerCase();
@@ -134,20 +177,14 @@
             });
         }
 
-        // 4. Handle Logout Safely
-        async function handleLogout() {
-            try {
-                await supabase.auth.signOut();
-            } catch (err) {
-                console.log(err);
-            }
+        function handleLogout() {
             localStorage.clear();
             window.location.href = 'index.html';
         }
 
-        // Run security protection check immediately on launch
-        verifyDashboardAccess();
-            </script>
+        // Run data collection loops automatically at launch
+        fetchUserContracts();
+    </script>
     
 </body>
 </html>
