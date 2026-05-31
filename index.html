@@ -54,27 +54,96 @@
     </div>
 
     <script>
-        // Auto-redirect if already logged in
-        if (localStorage.getItem('tradescrow_user_email')) {
-            window.location.href = 'dashboard.html';
+    // 1. Direct configuration variables
+    const supabaseUrl = "https://auxenvjsutqwuntfhsst.supabase.co";
+    const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI";
+    let supabase = null;
+
+    // 2. Safe initialization utility wrapper to handle global scope variations
+    function initSupabase() {
+        try {
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+            } else if (window.supabaseClient && typeof window.supabaseClient.createClient === 'function') {
+                supabase = window.supabaseClient.createClient(supabaseUrl, supabaseAnonKey);
+            } else {
+                console.error("Supabase library not yet fully parsed by browser window.");
+            }
+        } catch (err) {
+            console.error("Initialization check caught exception:", err);
+        }
+    }
+
+    // 3. Bind events carefully when DOM is completely parsed and interactive
+    document.addEventListener("DOMContentLoaded", async () => {
+        initSupabase();
+
+        // Run automatic active session verification check
+        if (supabase) {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (session && session.user) {
+                    localStorage.setItem('tradescrow_user_email', session.user.email);
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (sessionErr) {
+                console.log("Startup token inspection bypassed:", sessionErr);
+            }
         }
 
-        async function handleAuth(e) {
-            e.preventDefault();
-            const emailInput = document.getElementById('userEmail').value.trim().toLowerCase();
-            const authBtn = document.getElementById('authBtn');
-
-            authBtn.disabled = true;
-            authBtn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Authenticating...`;
-
-            // Save session string locally
-            localStorage.setItem('tradescrow_user_email', emailInput);
-            
-            // Route straight into dashboard tracking workspace
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 800);
+        // Attach click action directly using manual binding mechanics
+        const authButton = document.getElementById('authBtn');
+        if (authButton) {
+            authButton.removeAttribute('disabled'); // Ensure button is active
+            authButton.addEventListener('click', handleAuthenticationPipeline);
         }
-    </script>
+    });
+
+    // 4. Robust Pipeline Execution
+    async function handleAuthenticationPipeline() {
+        const emailInput = document.getElementById('userEmail').value.trim().toLowerCase();
+        const authBtn = document.getElementById('authBtn');
+
+        if (!emailInput || !emailInput.includes('@')) {
+            alert("Please enter a valid email address first.");
+            return;
+        }
+
+        // If library setup dropped, re-verify dynamically before hitting network pipelines
+        if (!supabase) {
+            initSupabase();
+            if (!supabase) {
+                alert("Connection pipeline initializing. Please try tapping the button once more.");
+                return;
+            }
+        }
+
+        // Trigger immediate interface loading indicators
+        authBtn.disabled = true;
+        authBtn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Sending Secure Link...`;
+
+        try {
+            const { data, error } = await supabase.auth.signInWithOtp({
+                email: emailInput,
+                options: {
+                    emailRedirectTo: window.location.origin + '/dashboard.html'
+                }
+            });
+
+            if (error) {
+                alert("🔒 Supabase Security Alert: " + error.message);
+                authBtn.disabled = false;
+                authBtn.innerText = "Access Live Dashboard →";
+            } else {
+                alert("📬 Link sent successfully! Open your Gmail app, look for the verification message, and tap it to open your dashboard.");
+                authBtn.innerText = "Check Your Gmail Inbox...";
+            }
+        } catch (catchErr) {
+            alert("Network connection handshake timeout: " + catchErr.message);
+            authBtn.disabled = false;
+            authBtn.innerText = "Access Live Dashboard →";
+        }
+    }
+</script>
 </body>
 </html>
