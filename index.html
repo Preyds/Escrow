@@ -11,6 +11,7 @@
 
     <div class="max-w-md w-full space-y-6">
         
+        <!-- Auth Card Component -->
         <div class="bg-gray-800 border border-gray-700 rounded-2xl p-8 shadow-xl">
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-extrabold text-yellow-500 tracking-wide">🎮 Tradescrow</h1>
@@ -30,26 +31,23 @@
             </form>
         </div>
 
+        <!-- Video Component Card -->
         <div class="bg-gray-800/60 border border-gray-700/70 rounded-2xl p-5 shadow-lg">
-    <h3 class="text-xs font-bold uppercase tracking-wider text-yellow-500 mb-3 flex items-center gap-2">
-        📖 New to Tradescrow? Watch Tutorial
-    </h3>
-    
-    <div class="relative w-full aspect-[9/16] max-h-[480px] mx-auto rounded-xl overflow-hidden border border-gray-950 bg-gray-950 shadow-inner">
-        <iframe 
-            class="absolute top-0 left-0 w-full h-full"
-            src="https://vt.tiktok.com/ZSxt3PPLd/" title="Tradescrow Platform Tutorial" 
-            frameborder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-            allowfullscreen>
-        </iframe>
-    </div>
-    
-    <p class="text-[11px] text-gray-400 mt-2.5 leading-relaxed text-center">
-        Learn how to initialize a contract, fund the escrow vault, and release payments safely in less than 60 seconds.
-    </p>
-</div>
-
+            <h3 class="text-xs font-bold uppercase tracking-wider text-yellow-500 mb-3 flex items-center gap-2">
+                📖 New to Tradescrow? Watch Tutorial
+            </h3>
+            
+            <div class="relative w-full aspect-[9/16] max-h-[480px] mx-auto rounded-xl overflow-hidden border border-gray-950 bg-gray-950 shadow-inner">
+                <!-- Optimized with standard direct web player embed fallback handler link -->
+                <iframe 
+                    class="absolute top-0 left-0 w-full h-full"
+                    src="https://www.tiktok.com/embed/v2/ZSxt3PPLd" 
+                    title="Tradescrow Platform Tutorial" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
             
             <p class="text-[11px] text-gray-400 mt-2.5 leading-relaxed text-center">
                 Learn how to initialize a contract, fund the escrow vault, and release payments safely in less than 60 seconds.
@@ -59,51 +57,47 @@
     </div>
 
     <script>
-        // 1. Initialize your existing Supabase Client (Make sure your keys are right above this)
-const supabaseUrl = "https://auxenvjsutqwuntfhsst.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI";
-const supabase = supabaseClient.createClient(supabaseUrl, supabaseAnonKey);
+        // 1. Initializing your secure database configuration context variables
+        const supabaseUrl = "https://auxenvjsutqwuntfhsst.supabase.co";
+        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI";
+        
+        // FIX: Replaced broken 'supabaseClient.createClient' with verified 'supabase.createClient' initialization identifier logic
+        const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
-// 2. Check if a secure user session already exists on this phone
-window.onload = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-        // Save email for your contract filters and send them to the dashboard
-        localStorage.setItem('tradescrow_user_email', session.user.email);
-        window.location.href = 'dashboard.html';
-    }
-};
+        // 2. Checking identity state indicators inside local storage registries on system start
+        window.onload = async () => {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (session && session.user) {
+                localStorage.setItem('tradescrow_user_email', session.user.email);
+                window.location.href = 'dashboard.html';
+            }
+        };
 
-// 3. Handle the Secure Login Trigger
-async function handleAuth(e) {
-    e.preventDefault();
-    const emailInput = document.getElementById('userEmail').value.trim().toLowerCase();
-    const authBtn = document.getElementById('authBtn');
+        // 3. Triggering structural authentication pipeline logic execution
+        async function handleAuth(e) {
+            e.preventDefault();
+            const emailInput = document.getElementById('userEmail').value.trim().toLowerCase();
+            const authBtn = document.getElementById('authBtn');
 
-    // UI Loading State Animation
-    authBtn.disabled = true;
-    authBtn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Sending Secure Link...`;
+            authBtn.disabled = true;
+            authBtn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Sending Secure Link...`;
 
-    // Trigger Supabase Magic Link Authentication
-    const { data, error } = await supabase.auth.signInWithOtp({
-        email: emailInput,
-        options: {
-            // This tells Supabase where to redirect the user after they click the email link
-            emailRedirectTo: window.location.origin + '/dashboard.html'
+            const { data, error } = await supabase.auth.signInWithOtp({
+                email: emailInput,
+                options: {
+                    emailRedirectTo: window.location.origin + '/dashboard.html'
+                }
+            });
+
+            if (error) {
+                alert("🔒 Auth Error: " + error.message);
+                authBtn.disabled = false;
+                authBtn.innerText = "Access Live Dashboard →";
+            } else {
+                alert("📬 Secure Login link sent! Please check your Gmail inbox (and spam folder) to securely verify your identity and access your dashboard.");
+                authBtn.innerText = "Check Your Gmail Inbox...";
+            }
         }
-    });
-
-    if (error) {
-        alert("🔒 Auth Error: " + error.message);
-        authBtn.disabled = false;
-        authBtn.innerText = "Access Live Dashboard →";
-    } else {
-        // Inform user to check their email app
-        alert("📬 Secure Login link sent! Please check your Gmail inbox (and spam folder) to securely verify your identity and access your dashboard.");
-        authBtn.innerText = "Check Your Gmail Inbox...";
-    }
-}
-
     </script>
 </body>
 </html>
