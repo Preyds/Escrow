@@ -48,6 +48,23 @@
     </main>
 
     <script>
+// Force secure session verification on page load
+async function checkSecureSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+        // No secure session found! Wipe localStorage and boot them out
+        localStorage.removeItem('tradescrow_user_email');
+        alert("🔒 Session expired or unauthorized. Please sign in via the secure gateway.");
+        window.location.href = 'index.html';
+    } else {
+        // Secure token verified! Use the official authenticated email for database filters
+        localStorage.setItem('tradescrow_user_email', session.user.email);
+    }
+}
+// Run the security check immediately
+checkSecureSession();
+
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
