@@ -48,136 +48,82 @@
     </main>
 
     <script>
-        // 1. Core Supabase Configuration Variables First
-const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
+        const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let supabase = null;
-
-// Safe Initialization Dynamic Check
-function initDashboardSupabase() {
-    try {
-        if (window.supabase && typeof window.supabase.createClient === 'function') {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        } else if (window.supabaseClient && typeof window.supabaseClient.createClient === 'function') {
-            supabase = window.supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        }
-    } catch (err) {
-        console.error("Dashboard database initialization failed:", err);
-    }
-}
-
-// 2. Force secure session verification immediately when DOM is ready
-document.addEventListener("DOMContentLoaded", async () => {
-    initDashboardSupabase();
-
-    if (!supabase) {
-        console.error("Supabase library failed to load on dashboard.");
-        return;
-    }
-
-    try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (!session || error) {
-            // No secure session found! Clear data and boot them out to index.html
-            localStorage.removeItem('tradescrow_user_email');
+        const activeUser = localStorage.getItem('tradescrow_user_email');
+        if (!activeUser) {
             window.location.href = 'index.html';
         } else {
-            // User is valid! Save email and setup dashboard
-            const activeUser = session.user.email;
-            localStorage.setItem('tradescrow_user_email', activeUser);
-            
-            const badge = document.getElementById('userBadge');
-            if (badge) badge.innerText = activeUser;
-            
-            // Run contract collection query safely
-            fetchUserContracts(activeUser);
+            document.getElementById('userBadge').innerText = activeUser;
         }
-    } catch (err) {
-        console.error("Security gatekeeper runtime exception:", err);
-    }
-});
 
-// 3. Fetch User Contracts Function
-async function fetchUserContracts(activeUser) {
-    const listContainer = document.getElementById('contractsList');
-    if (!listContainer) return;
+        async function fetchUserContracts() {
+            const listContainer = document.getElementById('contractsList');
 
-    const { data, error } = await supabase
-        .from('trade')
-        .select('*')
-        .or(`buyer_email.eq.${activeUser},seller_email.eq.${activeUser}`)
-        .order('created_at', { ascending: false });
+            // Query trades where user email matches buyer OR seller fields
+            const { data, error } = await supabaseClient
+                .from('trade')
+                .select('*')
+                .or(`buyer_email.eq.${activeUser},seller_email.eq.${activeUser}`)
+                .order('created_at', { ascending: false });
 
-    if (error) {
-        listContainer.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center">Sync Error: ${error.message}</div>`;
-        return;
-    }
+            if (error) {
+                listContainer.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center">Sync Error: ${error.message}</div>`;
+                return;
+            }
 
-    if (!data || data.length === 0) {
-        listContainer.innerHTML = `
-            <div class="text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl px-4">
-                <p class="text-sm font-semibold text-gray-300">No active contracts found</p>
-                <p class="text-xs text-gray-500 mt-1 mb-4">You haven't initialized or joined any escrow deals yet.</p>
-                <a href="create.html" class="inline-block bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs px-4 py-2 rounded-xl border border-gray-600 transition">Create Your First Contract</a>
-            </div>`;
-        return;
-    }
+            if (!data || data.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl px-4">
+                        <p class="text-sm font-semibold text-gray-300">No active contracts found</p>
+                        <p class="text-xs text-gray-500 mt-1 mb-4">You haven't initialized or joined any escrow deals yet.</p>
+                        <a href="create.html" class="inline-block bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs px-4 py-2 rounded-xl border border-gray-600 transition">Create Your First Contract</a>
+                    </div>`;
+                return;
+            }
 
-    listContainer.innerHTML = ""; // Clear loader
-    
-    data.forEach(trade => {
-        const isBuyer = trade.buyer_email.toLowerCase() === activeUser.toLowerCase();
-        const roleBadge = isBuyer ? '<span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Buyer</span>' : '<span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Seller</span>';
-        
-        let statusBadge = '';
-        if(trade.status === 'pending') statusBadge = '<span class="text-yellow-500 font-medium">Awaiting Deposit</span>';
-        if(trade.status === 'paid') statusBadge = '<span class="text-green-400 font-medium animate-pulse">🔒 Escrow Locked</span>';
-        if(trade.status === 'released') statusBadge = '<span class="text-gray-400 font-medium">Settle Closed</span>';
-        if(trade.status === 'disputed') statusBadge = '<span class="text-red-400 font-bold">🛑 Disputed Order</span>';
+            listContainer.innerHTML = ""; // Clear existing layout loader templates
+            
+            data.forEach(trade => {
+                const isBuyer = trade.buyer_email.toLowerCase() === activeUser.toLowerCase();
+                const roleBadge = isBuyer ? '<span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Buyer</span>' : '<span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Seller</span>';
+                
+                let statusBadge = '';
+                if(trade.status === 'pending') statusBadge = '<span class="text-yellow-500 font-medium">Awaiting Deposit</span>';
+                if(trade.status === 'paid') statusBadge = '<span class="text-green-400 font-medium animate-pulse">🔒 Escrow Locked</span>';
+                if(trade.status === 'released') statusBadge = '<span class="text-gray-400 font-medium">Settle Closed</span>';
+                if(trade.status === 'disputed') statusBadge = '<span class="text-red-400 font-bold">🛑 Disputed Order</span>';
 
-        const card = document.createElement('div');
-        card.className = "bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-md hover:border-gray-600 transition cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4";
-        card.onclick = () => window.location.href = `room.html?id=${trade.id}`;
-        
-        card.innerHTML = `
-            <div class="space-y-1">
-                <div class="flex items-center gap-2">
-                    <h3 class="font-bold text-white text-sm">${trade.asset_type}</h3>
-                    ${roleBadge}
-                </div>
-                <p class="text-xs text-gray-400 font-mono break-all">Partner: ${isBuyer ? trade.seller_email : trade.buyer_email}</p>
-            </div>
-            <div class="flex sm:flex-col justify-between items-end w-full sm:w-auto border-t sm:border-0 border-gray-700/50 pt-2 sm:pt-0">
-                <span class="text-sm font-bold text-green-400">₦${trade.amount.toLocaleString()}</span>
-                <span class="text-xs">${statusBadge}</span>
-            </div>
-        `;
-        listContainer.appendChild(card);
-    });
-}
+                const card = document.createElement('div');
+                card.className = "bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-md hover:border-gray-600 transition cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4";
+                card.onclick = () => window.location.href = `room.html?id=${trade.id}`;
+                
+                card.innerHTML = `
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-white text-sm">${trade.asset_type}</h3>
+                            ${roleBadge}
+                        </div>
+                        <p class="text-xs text-gray-400 font-mono break-all">Partner: ${isBuyer ? trade.seller_email : trade.buyer_email}</p>
+                    </div>
+                    <div class="flex sm:flex-col justify-between items-end w-full sm:w-auto border-t sm:border-0 border-gray-700/50 pt-2 sm:pt-0">
+                        <span class="text-sm font-bold text-green-400">₦${trade.amount.toLocaleString()}</span>
+                        <span class="text-xs">${statusBadge}</span>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
 
-// Secure Logout Network Handler
-async function handleLogout() {
-    if (supabase) {
-        await supabase.auth.signOut();
-    }
-    localStorage.clear();
-    window.location.href = 'index.html';
-}
+        function handleLogout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
 
+        // Run collection loops automatically at launch
+        fetchUserContracts();
     </script>
-
-    <!-- Global Compliance Footer Section -->
-    <footer class="mt-12 border-t border-gray-800 pt-6 text-center space-y-2 pb-8">
-        <div class="flex justify-center gap-4 text-xs font-semibold text-gray-500">
-            <a href="terms.html" class="hover:text-yellow-500 transition">Terms of Service</a>
-            <span>•</span>
-            <a href="privacy.html" class="hover:text-yellow-500 transition">Privacy Policy</a>
-        </div>
-        <p class="text-[10px] text-gray-600">Tradescrow operates as an independent P2P platform securely integrated with Paystack solutions.</p>
-    </footer>
-
 </body>
 </html>
