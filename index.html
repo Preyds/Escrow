@@ -15,15 +15,21 @@
             <p class="text-gray-400 text-sm mt-2">Decentralized P2P Account Escrow Portal</p>
         </div>
 
-        <form id="loginForm" onsubmit="handleAuth(event)" class="space-y-5">
-            <div>
+        <form id="authForm" class="space-y-5">
+            <div id="emailSection">
                 <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Enter Your Email Address</label>
                 <input id="userEmail" type="email" required placeholder="name@example.com" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-yellow-500 transition">
-                <p class="text-[11px] text-gray-500 mt-1.5">No password required. This email tracks your buyer/seller smart contracts instantly.</p>
+                <p class="text-[11px] text-gray-500 mt-1.5">A secure authorization code will be sent to your inbox.</p>
+            </div>
+
+            <div id="otpSection" class="hidden">
+                <label class="block text-xs font-bold uppercase tracking-wider text-yellow-500 mb-2">Enter 6-Digit Verification Code</label>
+                <input id="otpToken" type="text" placeholder="123456" maxlength="6" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3.5 text-center text-xl font-bold tracking-widest text-white focus:outline-none focus:border-yellow-500 transition">
+                <p class="text-[11px] text-gray-400 mt-1.5 text-center">Check your email spam folder if you don't see it right away.</p>
             </div>
 
             <button type="submit" id="authBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-3.5 px-4 rounded-xl shadow-lg transition duration-150 text-sm flex justify-center items-center gap-2">
-                Access Live Dashboard →
+                Send Secret Code →
             </button>
         </form>
     </div>
@@ -33,45 +39,79 @@
             📖 How Tradescrow Works
         </h2>
         <div class="relative w-full aspect-video rounded-xl overflow-hidden border border-gray-700 bg-gray-950">
-            <iframe 
-    class="w-full h-full" 
-    src="https://www.youtube.com/embed/4SeAcQRruh4?si=M4s1wiKFb4D5gpwq" 
-    title="Tradescrow Tutorial" 
-    frameborder="0" 
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-    allowfullscreen>
-</iframe>
-
+            <iframe class="w-full h-full" src="https://www.youtube.com/embed/4SeAcQRruh4?si=M4s1wiKFb4D5gpwq" title="Tradescrow Tutorial" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
         </div>
-        <p class="text-[11px] text-gray-400 mt-2.5 text-center">
-            Watch this quick 1-minute guide to see how to buy and sell safely.
-        </p>
     </div>
+
     <script>
-        // Auto-redirect if already logged in
-        if (localStorage.getItem('tradescrow_user_email')) {
-            window.location.href = 'dashboard.html';
-        }
+        // Initialize Supabase (Replace with your actual keys from Supabase dashboard)
+        const SUPABASE_URL = "https://your-project-id.supabase.co";
+        const SUPABASE_ANON_KEY = "your-anon-public-key";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        async function handleAuth(e) {
-            e.preventDefault();
-            const emailInput = document.getElementById('userEmail').value.trim().toLowerCase();
-            const authBtn = document.getElementById('authBtn');
+        // Track state: 'email' means waiting for email, 'otp' means waiting for verification code
+        let currentStep = 'email'; 
 
-            authBtn.disabled = true;
-            authBtn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Authenticating...`;
+        const authForm = document.getElementById('authForm');
+        const emailSection = document.getElementById('emailSection');
+        const otpSection = document.getElementById('otpSection');
+        const authBtn = document.getElementById('authBtn');
 
-            // Save session string locally
-            localStorage.setItem('tradescrow_user_email', emailInput);
-            
-            // Route straight into dashboard tracking workspace
-            setTimeout(() => {
+        // Check if an actual authenticated Supabase session exists
+        async function checkSession() {
+            const { data } = await supabase.auth.getSession();
+            if (data.session) {
                 window.location.href = 'dashboard.html';
-            }, 800);
+            }
         }
+        checkSession();
+
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('userEmail').value.trim().toLowerCase();
+
+            if (currentStep === 'email') {
+                // --- STEP 1: Send OTP to Email ---
+                authBtn.disabled = true;
+                authBtn.innerText = "Sending Code...";
+
+                const { error } = await supabase.auth.signInWithOtp({ email: email });
+
+                if (error) {
+                    alert("Error sending code: " + error.message);
+                    authBtn.disabled = false;
+                    authBtn.innerText = "Send Secret Code →";
+                } else {
+                    // Switch UI view to Token Entry
+                    emailSection.classList.add('hidden');
+                    otpSection.classList.remove('hidden');
+                    authBtn.disabled = false;
+                    authBtn.innerText = "Verify & Access Workspace →";
+                    currentStep = 'otp';
+                }
+
+            } else if (currentStep === 'otp') {
+                // --- STEP 2: Verify OTP Token ---
+                const token = document.getElementById('otpToken').value.trim();
+                authBtn.disabled = true;
+                authBtn.innerText = "Verifying Code...";
+
+                const { data, error } = await supabase.auth.verifyOtp({
+                    email: email,
+                    token: token,
+                    type: 'magiclink' // Supabase uses 'magiclink' or 'email' depending on setup configuration
+                });
+
+                if (error) {
+                    alert("Invalid or expired code. Please try again.");
+                    authBtn.disabled = false;
+                    authBtn.innerText = "Verify & Access Workspace →";
+                } else {
+                    // Success! Supabase automatically handles session cookies/local keys securely
+                    window.location.href = 'dashboard.html';
+                }
+            }
+        });
     </script>
 </body>
 </html>
-
-
-You mean like this ?
