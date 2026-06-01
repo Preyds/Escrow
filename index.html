@@ -43,13 +43,12 @@
         </div>
     </div>
 
-    <script>
-        // Initialize Supabase (Replace with your actual keys from Supabase dashboard)
-        const SUPABASE_URL = "https://auxenvjsutqwuntfhsst.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI";
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        <script>
+        // Use your actual live Supabase keys
+        const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Track state: 'email' means waiting for email, 'otp' means waiting for verification code
         let currentStep = 'email'; 
 
         const authForm = document.getElementById('authForm');
@@ -59,7 +58,7 @@
 
         // Check if an actual authenticated Supabase session exists
         async function checkSession() {
-            const { data } = await supabase.auth.getSession();
+            const { data } = await supabaseClient.auth.getSession();
             if (data.session) {
                 window.location.href = 'dashboard.html';
             }
@@ -71,18 +70,23 @@
             const email = document.getElementById('userEmail').value.trim().toLowerCase();
 
             if (currentStep === 'email') {
-                // --- STEP 1: Send OTP to Email ---
                 authBtn.disabled = true;
                 authBtn.innerText = "Sending Code...";
 
-                const { error } = await supabase.auth.signInWithOtp({ email: email });
+                // Requesting OTP code token setup
+                const { error } = await supabaseClient.auth.signInWithOtp({ 
+                    email: email,
+                    options: {
+                        shouldCreateUser: true
+                    }
+                });
 
                 if (error) {
                     alert("Error sending code: " + error.message);
                     authBtn.disabled = false;
                     authBtn.innerText = "Send Secret Code →";
                 } else {
-                    // Switch UI view to Token Entry
+                    // Smoothly transition layout fields to OTP submission phase
                     emailSection.classList.add('hidden');
                     otpSection.classList.remove('hidden');
                     authBtn.disabled = false;
@@ -91,27 +95,26 @@
                 }
 
             } else if (currentStep === 'otp') {
-                // --- STEP 2: Verify OTP Token ---
                 const token = document.getElementById('otpToken').value.trim();
                 authBtn.disabled = true;
                 authBtn.innerText = "Verifying Code...";
 
-                const { data, error } = await supabase.auth.verifyOtp({
+                const { data, error } = await supabaseClient.auth.verifyOtp({
                     email: email,
                     token: token,
-                    type: 'email' // Supabase uses 'magiclink' or 'email' depending on setup configuration
+                    type: 'email' // Changed to 'email' to cleanly match token string patterns
                 });
 
                 if (error) {
-                    alert("Invalid or expired code. Please try again.");
+                    alert("Invalid or expired code. Please try again. " + error.message);
                     authBtn.disabled = false;
                     authBtn.innerText = "Verify & Access Workspace →";
                 } else {
-                    // Success! Supabase automatically handles session cookies/local keys securely
                     window.location.href = 'dashboard.html';
                 }
             }
         });
     </script>
+
 </body>
 </html>
