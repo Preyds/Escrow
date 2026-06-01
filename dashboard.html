@@ -52,14 +52,29 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const activeUser = localStorage.getItem('tradescrow_user_email');
-        if (!activeUser) {
-            window.location.href = 'index.html';
-        } else {
+        // Global variable to hold user details safely once validated
+        let activeUser = null;
+
+        // --- NEW: Secure Session Protection Check ---
+        async function checkSecureAuth() {
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
+
+            if (error || !session) {
+                // No active cryptographic token found; force return to gateway
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Securely set the email from the validated Supabase session instance
+            activeUser = session.user.email;
             document.getElementById('userBadge').innerText = activeUser;
+
+            // Fetch contracts only after confirming a secure login
+            fetchUserContracts();
         }
 
         async function fetchUserContracts() {
+            if (!activeUser) return;
             const listContainer = document.getElementById('contractsList');
 
             // Query trades where user email matches buyer OR seller fields
@@ -117,13 +132,14 @@
             });
         }
 
-        function handleLogout() {
-            localStorage.clear();
+        // --- NEW: Secure Supabase Logout Handler ---
+        async function handleLogout() {
+            await supabaseClient.auth.signOut();
             window.location.href = 'index.html';
         }
 
-        // Run collection loops automatically at launch
-        fetchUserContracts();
+        // Run the secure gatecheck automatically at launch
+        checkSecureAuth();
     </script>
 </body>
 </html>
