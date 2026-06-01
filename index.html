@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-center items-center px-4">
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-center items-center px-4 py-12">
 
     <div class="max-w-md w-full bg-gray-800 border border-gray-700 rounded-2xl p-8 shadow-xl">
         <div class="text-center mb-8">
@@ -28,6 +28,25 @@
         </form>
     </div>
 
+    <div class="max-w-md w-full bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl mt-6">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-yellow-500 mb-3 flex items-center gap-2">
+            📖 How Tradescrow Works
+        </h2>
+        <div class="relative w-full aspect-video rounded-xl overflow-hidden border border-gray-700 bg-gray-950">
+            <iframe 
+    class="w-full h-full" 
+    src="https://www.youtube.com/embed/4SeAcQRruh4?si=M4s1wiKFb4D5gpwq" 
+    title="Tradescrow Tutorial" 
+    frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+    allowfullscreen>
+</iframe>
+
+        </div>
+        <p class="text-[11px] text-gray-400 mt-2.5 text-center">
+            Watch this quick 1-minute guide to see how to buy and sell safely.
+        </p>
+    </div>
     <script>
         // Auto-redirect if already logged in
         if (localStorage.getItem('tradescrow_user_email')) {
@@ -53,3 +72,6 @@
     </script>
 </body>
 </html>
+
+
+You mean like this ?
