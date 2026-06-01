@@ -99,7 +99,7 @@
                 const { data, error } = await supabase.auth.verifyOtp({
                     email: email,
                     token: token,
-                    type: 'magiclink' // Supabase uses 'magiclink' or 'email' depending on setup configuration
+                    type: 'email' // Supabase uses 'magiclink' or 'email' depending on setup configuration
                 });
 
                 if (error) {
