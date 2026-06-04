@@ -86,7 +86,7 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
         const PAYSTACK_KEY = 'pk_live_0107085f1ed7e09aff27260fb9f75b185d7f15a4';
 
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : window.supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const urlParams = new URLSearchParams(window.location.search);
         const tradeId = urlParams.get('id');
@@ -143,7 +143,6 @@
             windowContainer.scrollTop = windowContainer.scrollHeight;
         }
 
-        // Fixes Bug #3: Replaced raw filter with a robust script check inside callback
         function setupChatRealtimeListener() {
             supabaseClient
                 .channel(`public-messages-room-${tradeId}`)
@@ -155,16 +154,12 @@
                         table: 'messages'
                     }, 
                     (payload) => {
-                        console.log('🔔 Row Event Intercepted:', payload.new);
-                        // Ensure incoming text belongs to this active contract room instantly
                         if (payload.new.trade_id === tradeId) {
                             appendMessageToUI(payload.new);
                         }
                     }
                 )
-                .subscribe((status) => {
-                    console.log(`📡 Chat Realtime Connection: ${status}`);
-                });
+                .subscribe();
         }
 
         async function sendChatMessage(e) {
@@ -205,29 +200,19 @@
         }
 
         async function loadTradeRoom() {
-            console.log("Fetching record for ID:", tradeId);
-
             const { data, error } = await supabaseClient
                 .from('trade')
                 .select('*')
                 .eq('id', tradeId);
 
-            if (error) {
-                console.error("Supabase Database Error:", error.message);
-                document.getElementById('actionArea').innerText = "Database connection error.";
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                console.error("No record found matching ID:", tradeId);
-                document.getElementById('actionArea').innerText = "Contract room not found or restricted.";
+            if (error || !data || data.length === 0) {
+                document.getElementById('actionArea').innerText = "Contract room connection error.";
                 return;
             }
 
             tradeDetails = data[0];
             renderUI(tradeDetails); 
             setupRealtimeListener();
-            
             loadChatHistory();
             setupChatRealtimeListener();
         }
@@ -237,7 +222,7 @@
             document.getElementById('liveBadge').innerText = "Live Synced";
 
             supabaseClient
-                .channel('schema-db-changes')
+                .channel(`track-trade-${tradeId}`)
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trade', filter: `id=eq.${tradeId}` }, payload => {
                     tradeDetails = payload.new;
                     renderUI(tradeDetails);
@@ -261,37 +246,6 @@
             const isBuyer = viewerEmail === trade.buyer_email.toLowerCase();
             const isSeller = viewerEmail === trade.seller_email.toLowerCase();
 
-            // Setup Payout Destination Form if viewing as the seller and fields are empty
-            if (isSeller && (!trade.seller_account_number || !trade.seller_bank_code)) {
-                actions.innerHTML = `
-                    <div class="bg-gray-950 border border-yellow-500/20 rounded-xl p-4 my-2">
-                        <h4 class="text-xs font-bold text-yellow-500 mb-2 uppercase tracking-wide">🏦 Setup Payout Destination</h4>
-                        <p class="text-gray-400 text-[11px] mb-3">Input your Nigerian bank account setup where escrow settlements will be routed upon buyer verification approval.</p>
-                        
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-[10px] text-gray-500 mb-1">Select Bank</label>
-                                <select id="txtSellerBank" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-yellow-500">
-                                    <option value="058">GTBank</option>
-                                    <option value="011">First Bank</option>
-                                    <option value="044">Access Bank</option>
-                                    <option value="033">United Bank for Africa (UBA)</option>
-                                    <option value="057">Zenith Bank</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[10px] text-gray-500 mb-1">Account Number (10 Digits)</label>
-                                <input id="txtSellerNumber" type="text" maxlength="10" placeholder="e.g. 0001234567" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-yellow-500">
-                            </div>
-                            <button onclick="submitBankDetails()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-2 px-4 rounded-lg text-xs transition">
-                                Save Settlement Details
-                            </button>
-                        </div>
-                    </div>
-                `;
-                return; 
-            }
-
             if (trade.status === 'pending') {
                 resetTimelineToPending();
                 timerContainer.classList.add('hidden'); 
@@ -302,9 +256,9 @@
                     const totalWithFee = baseAmount + fee;
                     actions.innerHTML = `<button onclick="processPaystackCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow transition">Deposit Secured Escrow (₦${totalWithFee.toLocaleString()})</button>`;
                 } else if (isSeller) {
-                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">⏳ Waiting for the buyer (${trade.buyer_email}) to pay the deposit into escrow holding vault. Do not hand over account logs yet.</div>`;
+                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">⏳ Waiting for the buyer to make deposit into escrow vault. Do not share credentials yet.</div>`;
                 } else {
-                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Awaiting payment from buyer...</div>`;
+                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Awaiting escrow payment...</div>`;
                 }
             } 
             else if (trade.status === 'paid') {
@@ -316,56 +270,34 @@
 
                 if (isBuyer) {
                     actions.innerHTML = `
-                        <div class="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-xs text-yellow-400 mb-2 font-medium">⚠️ Check the chat area below. Verify account login custody matches terms before releasing funds.</div>
+                        <div class="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-xs text-yellow-400 mb-2 font-medium">⚠️ Verify credential log access matches terms fully before releasing settlements.</div>
                         <div class="flex gap-3">
-                            <button onclick="updateTradeStatus('released')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow transition text-sm">Release Funds to Seller</button>
+                            <button id="releaseFundsBtn" onclick="handleReleaseFunds()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow transition text-sm">Release Funds to Seller</button>
                             <button onclick="updateTradeStatus('disputed')" class="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold py-3 px-4 rounded-xl border border-red-500/20 transition text-sm">Raise Dispute</button>
                         </div>`;
                 } else if (isSeller) {
                     actions.innerHTML = `
                         <div class="bg-green-600/10 border border-green-500/20 rounded-xl p-4 text-center text-xs text-green-400 font-medium">
                             💰 Payment Confirmed inside Escrow! <br>
-                            <span class="text-gray-400 block mt-1">Drop the account email, password, or linking info in the secure chat box below so the buyer can verify it.</span>
+                            <span class="text-gray-400 block mt-1">Drop the account credentials securely in the chat window below. Once verified, the buyer will clear release.</span>
                         </div>`;
                 } else {
-                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Deal is funded. Verification phase active.</div>`;
+                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Deal funded. Inspection phase active.</div>`;
                 }
             } 
             else if (trade.status === 'released') {
                 setTimelineToSettled();
                 timerContainer.classList.add('hidden'); 
-                actions.innerHTML = `<div class="bg-green-500/10 border border-green-500/20 text-green-400 font-semibold p-4 rounded-xl text-center text-sm">🔒 Transaction fully verified and payouts finalized successfully.</div>`;
+                actions.innerHTML = `
+                    <div class="bg-green-500/10 border border-green-500/20 text-green-400 font-semibold p-4 rounded-xl text-center text-sm">
+                        🔒 Transaction fully verified and payouts settled.
+                        ${trade.seller_bank_name ? `<p class="text-[11px] text-gray-400 font-mono mt-1">Routed to: ${trade.seller_bank_name} (${trade.seller_account_number})</p>` : ''}
+                    </div>`;
             }
             else if (trade.status === 'disputed') {
                 setTimelineToDisputed();
                 timerContainer.classList.add('hidden'); 
-                actions.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 font-semibold p-4 rounded-xl text-center text-sm">🛑 Hold Order Placed. System Admin reviewing submitted trade logs.</div>`;
-            }
-        }
-
-        async function submitBankDetails() {
-            const bankCode = document.getElementById('txtSellerBank').value;
-            const accountNumber = document.getElementById('txtSellerNumber').value.trim();
-
-            if (accountNumber.length !== 10 || isNaN(accountNumber)) {
-                alert("Please input a valid 10-digit Nigerian bank account number!");
-                return;
-            }
-
-            console.log("Updating trade table matrix with bank details...", bankCode, accountNumber);
-
-            const { error } = await supabaseClient
-                .from('trade')
-                .update({
-                    seller_bank_code: bankCode,
-                    seller_account_number: accountNumber
-                })
-                .eq('id', tradeId);
-
-            if (error) {
-                alert("Failed to record details: " + error.message);
-            } else {
-                alert("Settlement bank details assigned successfully!");
+                actions.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 font-semibold p-4 rounded-xl text-center text-sm">🛑 Hold Order Placed. System Admin reviewing submitted room chat history logs.</div>`;
             }
         }
 
@@ -393,7 +325,6 @@
                     clockDisplay.className = "text-red-500 font-bold";
                     
                     if (tradeDetails && tradeDetails.status === 'paid') {
-                        console.log("Inspection window expired. Automatically releasing funds to seller...");
                         updateTradeStatus('released');
                     }
                     return;
@@ -436,75 +367,77 @@
             handler.openIframe();
         }
 
+        // Clean Status Fallback Framework for generic state shifts (like raising disputes)
         async function updateTradeStatus(newStatus) {
-    // If the buyer is releasing funds, trigger our secure payout pipeline check
-    // Function triggered when the Buyer clicks "Release Funds"
-async function handleReleaseFunds(tradeId) {
-    try {
-        // 1. Ask for confirmation first
-        const confirmRelease = confirm("Are you sure you want to release the funds to the seller? This action cannot be undone.");
-        if (!confirmRelease) return;
-
-        // 2. Collect Seller's Bank Details so the admin knows where to pay out
-        const bankName = prompt("Enter Seller's Bank Name (e.g., OPay, GTBank, Palmpay):");
-        const accountNum = prompt("Enter Seller's 10-Digit Account Number:");
-        const accountName = prompt("Enter Seller's Account Name:");
-
-        if (!bankName || !accountNum || !accountName) {
-            alert("Payout cancelled. Valid bank details are required to release funds safely.");
-            return;
+            try {
+                const { error } = await supabaseClient
+                    .from('trade')
+                    .update({ status: newStatus })
+                    .eq('id', tradeId);
+                if (error) throw error;
+                window.location.reload();
+            } catch (err) {
+                alert("Status sync error: " + err.message);
+            }
         }
 
-        // 3. Show a premium automated processing state on the button/screen
-        const releaseBtn = document.getElementById('releaseFundsBtn');
-        if (releaseBtn) {
-            releaseBtn.disabled = true;
-            releaseBtn.innerHTML = `
-                <span class="flex items-center justify-center gap-2">
-                    <svg class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25"></circle>
-                        <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing Instant Bank Transfer...
-                </span>`;
+        // Option B Mock Payout Automation Routine
+        async function handleReleaseFunds() {
+            try {
+                const confirmRelease = confirm("Are you sure you want to release the funds to the seller? This action cannot be undone.");
+                if (!confirmRelease) return;
+
+                const bankName = prompt("Enter Seller's Bank Name (e.g., OPay, GTBank, Palmpay):");
+                const accountNum = prompt("Enter Seller's 10-Digit Account Number:");
+                const accountName = prompt("Enter Seller's Account Name:");
+
+                if (!bankName || !accountNum || !accountName) {
+                    alert("Payout cancelled. Valid bank details are required to release funds safely.");
+                    return;
+                }
+
+                const releaseBtn = document.getElementById('releaseFundsBtn');
+                if (releaseBtn) {
+                    releaseBtn.disabled = true;
+                    releaseBtn.innerHTML = `
+                        <span class="flex items-center justify-center gap-2">
+                            <span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span>
+                            Processing Instant Bank Transfer...
+                        </span>`;
+                }
+
+                // Beautiful automated network mock loader delay
+                await new Promise(resolve => setTimeout(resolve, 2500));
+
+                const { error } = await supabaseClient
+                    .from('trade')
+                    .update({ 
+                        status: 'released',
+                        seller_bank_name: bankName,
+                        seller_account_number: accountNum,
+                        seller_account_name: accountName
+                    })
+                    .eq('id', tradeId);
+
+                if (error) throw error;
+
+                // Send a friendly custom automated alert to systemic room chat
+                await supabaseClient
+                    .from('messages')
+                    .insert([{ 
+                        trade_id: tradeId, 
+                        sender_email: 'System', 
+                        message_text: `📢 Automated Payout Routed! ₦${tradeDetails.amount.toLocaleString()} scheduled for transfer to ${bankName} account (${accountNum}).` 
+                    }]);
+
+                alert("🚀 Payout routing successful! The transaction has been settled successfully.");
+                window.location.reload();
+
+            } catch (error) {
+                alert("Automated routing failed: " + error.message);
+                window.location.reload();
+            }
         }
-
-        // Simulate network delay for that automated gateway feeling (2.5 seconds)
-        await new Promise(resolve => setTimeout(resolve, 2500));
-
-        // 4. Update the contract status and attach bank details in Supabase
-        const { data, error } = await supabaseClient
-            .from('trade')
-            .update({ 
-                status: 'released',
-                seller_bank_name: bankName,
-                seller_account_number: accountNum,
-                seller_account_name: accountName
-            })
-            .eq('id', tradeId);
-
-        if (error) throw error;
-
-        // 5. Success! Tell the user the "automation" cleared
-        alert("🚀 Payout routing successful! The transaction has been settled successfully.");
-        
-        // Reload page to reflect the new "Settle Closed" status on the dashboard
-        window.location.reload();
-
-    } catch (error) {
-        console.error("Payout Error:", error);
-        alert("Automated routing failed: " + error.message);
-        
-        // Reset button state if it fails
-        const releaseBtn = document.getElementById('releaseFundsBtn');
-        if (releaseBtn) {
-            releaseBtn.disabled = false;
-            releaseBtn.innerText = "Release Funds";
-        }
-    }
-}
-
-
 
         function copyShareLink() {
             const shareBtn = document.getElementById('shareBtn');
@@ -544,13 +477,11 @@ async function handleReleaseFunds(tradeId) {
             document.getElementById('txtPaid').className = "font-semibold text-green-500";
             document.getElementById('dotReleased').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-green-500 border-4 border-gray-800";
             document.getElementById('txtReleased').className = "font-semibold text-green-400";
-            document.getElementById('txtReleased').innerText = "Contract Settled Successfully";
         }
 
         function setTimelineToDisputed() {
             document.getElementById('dotPaid').className = "absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-red-500 border-4 border-gray-800";
             document.getElementById('txtPaid').className = "font-semibold text-red-500";
-            document.getElementById('txtPaid').innerText = "Dispute Locked Action";
         }
 
         loadTradeRoom();
