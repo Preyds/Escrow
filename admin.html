@@ -3,79 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tradescrow - Admin Arbitration Desk</title>
+    <title>Tradescrow - Admin Arbitration & Settlement Desk</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen pb-12">
 
     <nav class="bg-gray-800 border-b border-gray-700 p-4 mb-8">
-        <div class="max-w-5xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold text-red-500">🛡️ Tradescrow Arbitration Desk</h1>
-            <span class="text-xs bg-red-500/10 text-red-400 font-mono px-3 py-1 rounded-full border border-red-500/20">Secure Control Node</span>
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-red-500">🛡️ Tradescrow Control Node</h1>
+            <span class="text-xs bg-red-500/10 text-red-400 font-mono px-3 py-1 rounded-full border border-red-500/20">Secure Operations Desk</span>
         </div>
     </nav>
 
-    <main class="max-w-5xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+    <main class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-xl h-[70vh] flex flex-col">
-            <h3 class="text-sm font-bold text-gray-300 mb-3 border-b border-gray-700 pb-2">⚠️ Disputed Escrow Queue</h3>
-            <div id="disputeQueue" class="space-y-2 overflow-y-auto flex-1 text-xs">
-                <p class="text-gray-500 text-center py-8">Loading problem tickets...</p>
+        <div class="space-y-6 max-h-[80vh] flex flex-col overflow-y-auto">
+            
+            <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-xl flex flex-col">
+                <h3 class="text-sm font-bold text-red-400 mb-3 border-b border-gray-700 pb-2 flex items-center justify-between">
+                    <span>⚠️ Disputed Escrow Queue</span>
+                    <span id="disputeCount" class="bg-red-500/20 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
+                </h3>
+                <div id="disputeQueue" class="space-y-2 text-xs max-h-[30vh] overflow-y-auto">
+                    <p class="text-gray-500 text-center py-4">Loading problem tickets...</p>
+                </div>
             </div>
+
+            <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-xl flex flex-col">
+                <h3 class="text-sm font-bold text-yellow-500 mb-3 border-b border-gray-700 pb-2 flex items-center justify-between">
+                    <span>🏦 Pending Bank Payouts (Option B)</span>
+                    <span id="payoutCount" class="bg-yellow-500/20 text-yellow-400 text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
+                </h3>
+                <div id="payoutQueue" class="space-y-3 text-xs max-h-[38vh] overflow-y-auto">
+                    <p class="text-gray-500 text-center py-4">Loading settlement requests...</p>
+                </div>
+            </div>
+
         </div>
 
-        <div id="arbitrationPanel" class="md:col-span-2 bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl hidden">
-            <div class="flex justify-between items-start border-b border-gray-700 pb-4 mb-4">
-                <div>
-                    <h2 class="text-lg font-bold text-white flex items-center gap-2">Deal Case: <span id="caseId" class="text-yellow-500 font-mono text-xs">...</span></h2>
-                    <p class="text-xs text-gray-400 mt-1">Asset: <span id="caseAsset" class="text-gray-200 font-medium">...</span> | Value: <span id="caseAmount" class="text-green-400 font-bold">...</span></p>
+        <div class="md:col-span-2 space-y-6">
+            
+            <div id="arbitrationPanel" class="bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl hidden">
+                <div class="flex justify-between items-start border-b border-gray-700 pb-4 mb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">Deal Case: <span id="caseId" class="text-yellow-500 font-mono text-xs">...</span></h2>
+                        <p class="text-xs text-gray-400 mt-1">Asset: <span id="caseAsset" class="text-gray-200 font-medium">...</span> | Value: <span id="caseAmount" class="text-green-400 font-bold">...</span></p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="resolveCase('released')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded-xl transition">Payout Seller</button>
+                        <button onclick="resolveCase('pending')" class="bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-bold py-2 px-3 rounded-xl transition">Refund Buyer</button>
+                    </div>
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="resolveCase('released')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded-xl transition">Payout Seller</button>
-                    <button onclick="resolveCase('pending')" class="bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-bold py-2 px-3 rounded-xl transition">Refund Buyer</button>
+
+                <div class="grid grid-cols-2 gap-4 text-xs bg-gray-950 p-3 rounded-xl border border-gray-800 mb-6">
+                    <div><span class="text-gray-500 block">Buyer Participant:</span> <span id="caseBuyer" class="text-gray-300 font-mono">...</span></div>
+                    <div><span class="text-gray-500 block">Seller Participant:</span> <span id="caseSeller" class="text-gray-300 font-mono">...</span></div>
+                </div>
+
+                <h4 class="text-xs font-bold text-gray-400 mb-2">📜 Intercepted Room Chat Logs</h4>
+                <div id="caseChatLogs" class="bg-gray-950 border border-gray-900 rounded-xl p-4 h-64 overflow-y-auto space-y-3 text-[11px] font-sans">
+                    <p class="text-gray-600 text-center py-8">Select a dispute file to view data records.</p>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 text-xs bg-gray-950 p-3 rounded-xl border border-gray-800 mb-6">
-                <div><span class="text-gray-500 block">Buyer Participant:</span> <span id="caseBuyer" class="text-gray-300 font-mono">...</span></div>
-                <div><span class="text-gray-500 block">Seller Participant:</span> <span id="caseSeller" class="text-gray-300 font-mono">...</span></div>
+            <div id="emptyPanel" class="bg-gray-800 border border-gray-700 border-dashed rounded-2xl flex flex-col items-center justify-center p-12 h-64 text-center text-gray-500">
+                <span>🔍 Select an active disputed ticket contract file from the left sidebar columns to audit chat logs and arbitrate distributions.</span>
             </div>
 
-            <h4 class="text-xs font-bold text-gray-400 mb-2">📜 Intercepted Room Chat Logs</h4>
-            <div id="caseChatLogs" class="bg-gray-950 border border-gray-900 rounded-xl p-4 h-64 overflow-y-auto space-y-3 text-[11px] font-sans">
-                </div>
-        </div>
-
-        <div id="emptyPanel" class="md:col-span-2 bg-gray-800 border border-gray-700 border-dashed rounded-2xl flex flex-col items-center justify-center p-12 text-center text-gray-500">
-            <span>🔍 Select a disputed ticket contract file from the queue column to intercept logs and arbitrate payouts.</span>
         </div>
 
     </main>
 
     <script>
-// Add this exact block at the very top of your Admin panel JavaScript script tags
-(function verifyAdminAccess() {
-    const adminSessionKey = "tradescrow_admin_auth_token";
-    let currentToken = sessionStorage.getItem(adminSessionKey);
+        // Secure Access Handshake Verification Control
+        (function verifyAdminAccess() {
+            const adminSessionKey = "tradescrow_admin_auth_token";
+            let currentToken = sessionStorage.getItem(adminSessionKey);
+            const SECRET_ADMIN_PIN = "0852"; 
 
-    // 💡 Choose your unique secure admin pin code below (Replace '7709' with whatever you want)
-    const SECRET_ADMIN_PIN = "0852"; 
-
-    if (!currentToken || currentToken !== btoa(SECRET_ADMIN_PIN)) {
-        const adminInput = prompt("🔒 Restricted Access: Enter Master Administrator PIN:");
-        
-        if (adminInput === SECRET_ADMIN_PIN) {
-            // Store a basic encrypted token string inside session memory so you don't keep getting prompted
-            sessionStorage.setItem(adminSessionKey, btoa(SECRET_ADMIN_PIN));
-            alert("Access granted. Welcome back, Administrator.");
-        } else {
-            alert("Unauthorized access detected. Redirecting to terminal dashboard...");
-            window.location.href = "dashboard.html";
-            throw new Error("Admin authorization handshake aborted.");
-        }
-    }
-})();
+            if (!currentToken || currentToken !== btoa(SECRET_ADMIN_PIN)) {
+                const adminInput = prompt("🔒 Restricted Access: Enter Master Administrator PIN:");
+                if (adminInput === SECRET_ADMIN_PIN) {
+                    sessionStorage.setItem(adminSessionKey, btoa(SECRET_ADMIN_PIN));
+                    alert("Access granted. Welcome back, Administrator.");
+                } else {
+                    alert("Unauthorized access detected. Redirecting to terminal dashboard...");
+                    window.location.href = "dashboard.html";
+                    throw new Error("Admin authorization handshake aborted.");
+                }
+            }
+        })();
 
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
@@ -83,6 +101,7 @@
 
         let selectedTradeId = null;
 
+        // Fetch and Sync all Active Disputes
         async function fetchDisputes() {
             const { data, error } = await supabaseClient
                 .from('trade')
@@ -91,10 +110,18 @@
                 .order('created_at', { ascending: false });
 
             const queue = document.getElementById('disputeQueue');
+            const countLabel = document.getElementById('disputeCount');
             queue.innerHTML = "";
 
+            if (error) {
+                queue.innerHTML = `<p class="text-red-500 py-2">Failed to sync database logs.</p>`;
+                return;
+            }
+
+            countLabel.innerText = data ? data.length : 0;
+
             if (!data || data.length === 0) {
-                queue.innerHTML = `<p class="text-gray-600 text-center py-8">All clean! No active disputes found.</p>`;
+                queue.innerHTML = `<p class="text-gray-600 text-center py-4">No active disputes open.</p>`;
                 return;
             }
 
@@ -113,6 +140,77 @@
             });
         }
 
+        // NEW FEATURE: Fetch and Sync all Settled Payouts (Option B Manual Router)
+        async function fetchPendingPayouts() {
+            const { data, error } = await supabaseClient
+                .from('trade')
+                .select('*')
+                .eq('status', 'released')
+                .order('created_at', { ascending: false });
+
+            const queue = document.getElementById('payoutQueue');
+            const countLabel = document.getElementById('payoutCount');
+            queue.innerHTML = "";
+
+            if (error) {
+                queue.innerHTML = `<p class="text-red-500 py-2">Failed to sync payout entries.</p>`;
+                return;
+            }
+
+            countLabel.innerText = data ? data.length : 0;
+
+            if (!data || data.length === 0) {
+                queue.innerHTML = `<p class="text-gray-600 text-center py-6">All clear! No payouts pending.</p>`;
+                return;
+            }
+
+            data.forEach(trade => {
+                const card = document.createElement('div');
+                card.className = "p-3 bg-gray-950 border border-gray-850 rounded-xl space-y-2";
+                
+                // Ensure default fallbacks display clean text if fields aren't completely ready
+                const bank = trade.seller_bank_name || 'Unspecified Bank';
+                const number = trade.seller_account_number || 'No Account';
+                const name = trade.seller_account_name || 'Unknown Recipient';
+
+                card.innerHTML = `
+                    <div class="flex justify-between font-bold border-b border-gray-800 pb-1.5">
+                        <span class="text-gray-400 text-[10px] uppercase tracking-wider font-mono">VAL: ₦${trade.amount.toLocaleString()}</span>
+                        <span class="text-yellow-500 text-[10px]">Awaiting Transfer</span>
+                    </div>
+                    <div class="space-y-0.5 text-[11px] font-mono text-gray-300">
+                        <p><span class="text-gray-500">Bank:</span> ${bank}</p>
+                        <p><span class="text-gray-500">Acct No:</span> <span class="text-white font-bold select-all">${number}</span></p>
+                        <p class="truncate"><span class="text-gray-500">Name:</span> ${name}</p>
+                    </div>
+                    <button onclick="finalizeManualPayout('${trade.id}', ${trade.amount}, '${number}')" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 px-2 rounded-lg text-[10px] transition mt-1">
+                        ✓ Mark Payout Completed
+                    </button>
+                `;
+                queue.appendChild(card);
+            });
+        }
+
+        // Action Triggered when Admin hits "Mark Payout Completed"
+        async function finalizeManualPayout(tradeId, amount, accountNumber) {
+            const confirmPayout = confirm(`Verify Transfer: Have you manually sent ₦${amount.toLocaleString()} to account (${accountNumber}) on your banking application?`);
+            if (!confirmPayout) return;
+
+            // Updates status to a final closed category state so it rolls off the pending layouts view
+            const { error } = await supabaseClient
+                .from('trade')
+                .update({ status: 'settled_closed' })
+                .eq('id', tradeId);
+
+            if (error) {
+                alert("Failed to update status record: " + error.message);
+            } else {
+                alert("Payout tracked as completed! Entry archived safely.");
+                refreshDashboardData();
+            }
+        }
+
+        // Load Case Details into Content Panel
         async function loadCaseFile(trade) {
             selectedTradeId = trade.id;
             document.getElementById('emptyPanel').classList.add('hidden');
@@ -124,7 +222,6 @@
             document.getElementById('caseBuyer').innerText = trade.buyer_email;
             document.getElementById('caseSeller').innerText = trade.seller_email;
 
-            // Load chat logs to catch who dropped the password or who is lying
             const { data: messages } = await supabaseClient
                 .from('messages')
                 .select('*')
@@ -135,18 +232,19 @@
             logsContainer.innerHTML = "";
 
             if (!messages || messages.length === 0) {
-                logsContainer.innerHTML = `<p class="text-gray-600 text-center py-8">No conversation occurred inside this room.</p>`;
+                logsContainer.innerHTML = `<p class="text-gray-600 text-center py-8">No conversation records exist inside this room.</p>`;
             } else {
                 messages.forEach(msg => {
                     const line = document.createElement('div');
-                    line.className = "p-2 bg-gray-900 rounded border border-gray-850";
+                    line.className = "p-2 bg-gray-900 rounded border border-gray-850 text-left";
                     line.innerHTML = `<strong>[${msg.sender_email}]:</strong> <span class="text-gray-300">${msg.message_text}</span>`;
                     logsContainer.appendChild(line);
                 });
             }
-            fetchDisputes(); // refresh styling highlights
+            fetchDisputes(); 
         }
 
+        // Force Handle Override Resolution Actions
         async function resolveCase(finalTargetStatus) {
             if (!selectedTradeId) return;
             
@@ -165,13 +263,26 @@
                 document.getElementById('arbitrationPanel').classList.add('hidden');
                 document.getElementById('emptyPanel').classList.remove('hidden');
                 selectedTradeId = null;
-                fetchDisputes();
+                refreshDashboardData();
             }
         }
 
-        // Initialize queue and pull live data changes
-        fetchDisputes();
-        supabaseClient.channel('admin-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'trade' }, () => fetchDisputes()).subscribe();
+        // Master Dashboard Refresh Aggregator
+        function refreshDashboardData() {
+            fetchDisputes();
+            fetchPendingPayouts();
+        }
+
+        // Initialization Scripts
+        refreshDashboardData();
+
+        // Realtime Table Channel Listener Sync Rules
+        supabaseClient
+            .channel('admin-master-sync')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'trade' }, () => {
+                refreshDashboardData();
+            })
+            .subscribe();
     </script>
 </body>
 </html>
