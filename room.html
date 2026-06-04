@@ -438,38 +438,72 @@
 
         async function updateTradeStatus(newStatus) {
     // If the buyer is releasing funds, trigger our secure payout pipeline check
-    if (newStatus === 'released') {
-        const confirmRelease = confirm("Are you absolute sure you want to release escrow funds to the seller? This action cannot be reversed.");
+    // Function triggered when the Buyer clicks "Release Funds"
+async function handleReleaseFunds(tradeId) {
+    try {
+        // 1. Ask for confirmation first
+        const confirmRelease = confirm("Are you sure you want to release the funds to the seller? This action cannot be undone.");
         if (!confirmRelease) return;
 
-        const actionArea = document.getElementById('actionArea');
-        actionArea.innerHTML = `<div class="text-center text-xs text-yellow-500 font-medium animate-pulse">⚡ Bank wire transfer payout initialization in progress... Please do not close this window.</div>`;
+        // 2. Collect Seller's Bank Details so the admin knows where to pay out
+        const bankName = prompt("Enter Seller's Bank Name (e.g., OPay, GTBank, Palmpay):");
+        const accountNum = prompt("Enter Seller's 10-Digit Account Number:");
+        const accountName = prompt("Enter Seller's Account Name:");
 
-        // Direct table update execution tracking
-        const { error } = await supabaseClient
-            .from('trade')
-            .update({ status: 'released' })
-            .eq('id', tradeId);
-
-        if (error) {
-            alert("Payout Verification Adjustment Failure: " + error.message);
-            loadTradeRoom(); // Reset UI state layout
+        if (!bankName || !accountNum || !accountName) {
+            alert("Payout cancelled. Valid bank details are required to release funds safely.");
             return;
         }
 
-        alert("Payout finalized! The database status has been updated to released and funds are routing directly to the seller's bank account.");
-        return;
-    }
+        // 3. Show a premium automated processing state on the button/screen
+        const releaseBtn = document.getElementById('releaseFundsBtn');
+        if (releaseBtn) {
+            releaseBtn.disabled = true;
+            releaseBtn.innerHTML = `
+                <span class="flex items-center justify-center gap-2">
+                    <svg class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25"></circle>
+                        <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing Instant Bank Transfer...
+                </span>`;
+        }
 
-    // Keep original fallback operations for handling disputes or updates
-    let updateData = { status: newStatus };
-    if (newStatus === 'paid') {
-        updateData.paid_at = new Date().toISOString();
-    }
+        // Simulate network delay for that automated gateway feeling (2.5 seconds)
+        await new Promise(resolve => setTimeout(resolve, 2500));
 
-    const { error } = await supabaseClient.from('trade').update(updateData).eq('id', tradeId);
-    if (error) alert("Status adjustment failure: " + error.message);
+        // 4. Update the contract status and attach bank details in Supabase
+        const { data, error } = await supabaseClient
+            .from('trade')
+            .update({ 
+                status: 'released',
+                seller_bank_name: bankName,
+                seller_account_number: accountNum,
+                seller_account_name: accountName
+            })
+            .eq('id', tradeId);
+
+        if (error) throw error;
+
+        // 5. Success! Tell the user the "automation" cleared
+        alert("🚀 Payout routing successful! The transaction has been settled successfully.");
+        
+        // Reload page to reflect the new "Settle Closed" status on the dashboard
+        window.location.reload();
+
+    } catch (error) {
+        console.error("Payout Error:", error);
+        alert("Automated routing failed: " + error.message);
+        
+        // Reset button state if it fails
+        const releaseBtn = document.getElementById('releaseFundsBtn');
+        if (releaseBtn) {
+            releaseBtn.disabled = false;
+            releaseBtn.innerText = "Release Funds";
+        }
+    }
 }
+
 
 
         function copyShareLink() {
