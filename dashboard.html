@@ -6,6 +6,25 @@
     <title>Tradescrow - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* Infinite smooth sliding animation from right to left */
+        @keyframes slideFromRight {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .animate-marquee {
+            display: flex;
+            width: max-content;
+            animation: slideFromRight 25s linear infinite;
+        }
+
+        /* Allows users to pause the scroll when hovering or pressing down */
+        .animate-marquee:hover {
+            animation-play-state: paused;
+        }
+    </style>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen pb-12">
 
@@ -24,6 +43,55 @@
     <div class="max-w-4xl mx-auto px-4 mt-6 grid grid-cols-2 gap-2">
         <a href="dashboard.html" class="bg-gray-800 border border-yellow-500/30 text-yellow-500 text-center py-2.5 rounded-xl font-bold text-xs shadow-md">💼 My Escrow Trades</a>
         <a href="chat.html" class="bg-gray-800/50 hover:bg-gray-800 text-gray-400 text-center py-2.5 rounded-xl font-bold text-xs border border-gray-700 transition">💬 Global Hub Chat</a>
+    </div>
+
+    <!-- NEW: Auto-Scrolling Testimony Feature Section -->
+    <div class="max-w-4xl mx-auto px-4 mt-6 overflow-hidden relative">
+        <!-- Subtle gradient fades to blend elements smoothly into the dark viewport backgrounds -->
+        <div class="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-gray-900 to-transparent z-10 pointer-events-none"></div>
+        <div class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-900 to-transparent z-10 pointer-events-none"></div>
+        
+        <div class="animate-marquee gap-4 flex py-1">
+            <!-- First Track Instance -->
+            <div class="flex gap-4">
+                <div class="bg-gray-800/60 border border-gray-700/60 rounded-xl px-4 py-2.5 text-xs flex items-center gap-2 max-w-xs whitespace-nowrap">
+                    <span class="text-yellow-500">🤝</span>
+                    <p class="text-gray-300">"Exchanged my IG page in 5 mins safely!" <span class="text-gray-500 font-medium">- @chidi_crypto</span></p>
+                </div>
+                <div class="bg-gray-800/60 border border-gray-700/60 rounded-xl px-4 py-2.5 text-xs flex items-center gap-2 max-w-xs whitespace-nowrap">
+                    <span class="text-green-400">🔒</span>
+                    <p class="text-gray-300">"The escrow lock mechanism is bulletproof." <span class="text-gray-500 font-medium">- @olu_dev</span></p>
+                </div>
+                <div class="bg-gray-800/60 border border-gray-700/60 rounded-xl px-4 py-2.5 text-xs flex items-center gap-2 max-w-xs whitespace-nowrap">
+                    <span class="text-yellow-500">🎮</span>
+                    <p class="text-gray-300">"Safest P2P account portal in Nigeria ₦" <span class="text-gray-500 font-medium">- @bisi_trades</span></p>
+                </div>
+                <div class="bg-gray-800/60 border border-gray-700/60 rounded-xl px-4 py-2.5 text-xs flex items-center gap-2 max-w-xs whitespace-nowrap">
+                    <span class="text-yellow-500">😁</span>
+                    <p class="text-gray-300">"Saved me from a notorious online scammer today." <span class="text-gray-500 font-medium">- @tunde_X</span></p>
+                </div>
+            </div>
+            
+            <!-- Duplicated Track Instance for Seamless Repeating Loop -->
+            <div class="flex gap-4">
+                <div class="bg-gray-800/60 border border-gray-700/60 rounded-xl px-4 py-2.5 text-xs flex items-center gap-2 max-w-xs whitespace-nowrap">
+                    <span class="text-yellow-500">🤝</span>
+                    <p class="text-gray-300">"Exchanged my IG page in 5 mins safely!" <span class="text-gray-500 font-medium">- @chidi_crypto</span></p>
+                </div>
+                <div class="bg-gray-800/60 border border-gray-700/60 rounded-xl px-4 py-2.5 text-xs flex items-center gap-2 max-w-xs whitespace-nowrap">
+                    <span class="text-green-400">🔒</span>
+                    <p class="text-gray-300">"The escrow lock mechanism is bulletproof." <span class="text-gray-500 font-medium">- @olu_dev</span></p>
+                </div>
+                <div class="bg-gray-800/60 border border-gray-700/60 rounded-xl px-4 py-2.5 text-xs flex items-center gap-2 max-w-xs whitespace-nowrap">
+                    <span class="text-yellow-500">🎮</span>
+                    <p class="text-gray-300">"Safest P2P account portal in Nigeria ₦" <span class="text-gray-500 font-medium">- @bisi_trades</span></p>
+                </div>
+                <div class="bg-gray-800/60 border border-gray-700/60 rounded-xl px-4 py-2.5 text-xs flex items-center gap-2 max-w-xs whitespace-nowrap">
+                    <span class="text-yellow-500">😁</span>
+                    <p class="text-gray-300">"Saved me from a notorious online scammer today." <span class="text-gray-500 font-medium">- @tunde_X</span></p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Main Workspace Dashboard content panel -->
@@ -52,24 +120,19 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Global variable to hold user details safely once validated
         let activeUser = null;
 
-        // --- NEW: Secure Session Protection Check ---
         async function checkSecureAuth() {
             const { data: { session }, error } = await supabaseClient.auth.getSession();
 
             if (error || !session) {
-                // No active cryptographic token found; force return to gateway
                 window.location.href = 'index.html';
                 return;
             }
 
-            // Securely set the email from the validated Supabase session instance
             activeUser = session.user.email;
             document.getElementById('userBadge').innerText = activeUser;
 
-            // Fetch contracts only after confirming a secure login
             fetchUserContracts();
         }
 
@@ -77,7 +140,6 @@
             if (!activeUser) return;
             const listContainer = document.getElementById('contractsList');
 
-            // Query trades where user email matches buyer OR seller fields
             const { data, error } = await supabaseClient
                 .from('trade')
                 .select('*')
@@ -99,7 +161,7 @@
                 return;
             }
 
-            listContainer.innerHTML = ""; // Clear existing layout loader templates
+            listContainer.innerHTML = ""; 
             
             data.forEach(trade => {
                 const isBuyer = trade.buyer_email.toLowerCase() === activeUser.toLowerCase();
@@ -132,13 +194,11 @@
             });
         }
 
-        // --- NEW: Secure Supabase Logout Handler ---
         async function handleLogout() {
             await supabaseClient.auth.signOut();
             window.location.href = 'index.html';
         }
 
-        // Run the secure gatecheck automatically at launch
         checkSecureAuth();
     </script>
 </body>
