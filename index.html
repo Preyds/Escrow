@@ -2,20 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-yellow-500 transition" content="width=device-width, initial-scale=1.0">
     <title>Tradescrow - Secure Gateway</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<!-- Added relative positioning and overflow hidden to prevent scrollbars from the background graphics -->
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-center items-center px-4 py-12 relative overflow-x-hidden">
 
-    <!-- Subtle Floating Emoji Background Pattern -->
-    <div class="absolute inset-0 pointer-events-none opacity-[0.04] select-none z-0">
+    <!-- Smoothly Animating Floating Emoji Background Pattern -->
+    <div class="absolute inset-0 pointer-events-none opacity-[0.06] select-none z-0">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <!-- Defines a repeating grid unit -->
+                <!-- Defines a repeating grid unit with built-in native scrolling animations -->
                 <pattern id="emojiPattern" width="160" height="160" patternUnits="userSpaceOnUse">
+                    <!-- Animates the X coordinate infinitely over 30 seconds -->
+                    <animate attributeName="x" from="0" to="160" dur="30s" repeatCount="indefinite" />
+                    <!-- Animates the Y coordinate infinitely over 30 seconds to create a seamless diagonal crawl -->
+                    <animate attributeName="y" from="0" to="160" dur="30s" repeatCount="indefinite" />
+                    
                     <!-- Row 1 -->
                     <text x="20" y="40" font-size="22">🎮</text>
                     <text x="100" y="40" font-size="22">⚽</text>
@@ -24,12 +28,12 @@
                     <text x="100" y="120" font-size="22">🤝</text>
                 </pattern>
             </defs>
-            <!-- Fills the entire background with the repeating pattern -->
+            <!-- Fills the entire background with the moving pattern -->
             <rect width="100%" height="100%" fill="url(#emojiPattern)" />
         </svg>
     </div>
 
-    <!-- Main Content Container (z-10 forces it to sit above the background pattern) -->
+    <!-- Main Content Container -->
     <div class="max-w-md w-full bg-gray-800 border border-gray-700 rounded-2xl p-8 shadow-xl z-10">
         <div class="text-center mb-8">
             <h1 class="text-3xl font-extrabold text-yellow-500 tracking-wide">🎮 Tradescrow</h1>
@@ -65,7 +69,6 @@
     </div>
 
     <script>
-        // Use your actual live Supabase keys
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -77,7 +80,6 @@
         const otpSection = document.getElementById('otpSection');
         const authBtn = document.getElementById('authBtn');
 
-        // Check if an actual authenticated Supabase session exists
         async function checkSession() {
             const { data } = await supabaseClient.auth.getSession();
             if (data.session) {
@@ -94,7 +96,6 @@
                 authBtn.disabled = true;
                 authBtn.innerText = "Sending Code...";
 
-                // Requesting OTP code token setup
                 const { error } = await supabaseClient.auth.signInWithOtp({ 
                     email: email,
                     options: {
@@ -107,7 +108,6 @@
                     authBtn.disabled = false;
                     authBtn.innerText = "Send Secret Code →";
                 } else {
-                    // Smoothly transition layout fields to OTP submission phase
                     emailSection.classList.add('hidden');
                     otpSection.classList.remove('hidden');
                     authBtn.disabled = false;
