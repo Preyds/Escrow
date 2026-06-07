@@ -2,24 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-yellow-500 transition" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tradescrow - Secure Gateway</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-center items-center px-4 py-12 relative overflow-x-hidden">
+    
+    <style>
+        /* Custom keyframes to simulate continuous, non-linear random floating movement */
+        @keyframes driftRandomly {
+            0% { transform: translate(0px, 0px); }
+            20% { transform: translate(50px, -30px); }
+            40% { transform: translate(-30px, 60px); }
+            60% { transform: translate(40px, 40px); }
+            80% { transform: translate(-50px, -40px); }
+            100% { transform: translate(0px, 0px); }
+        }
 
-    <!-- Smoothly Animating Floating Emoji Background Pattern -->
-    <div class="absolute inset-0 pointer-events-none opacity-[0.06] select-none z-0">
-        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        .animate-bg-random {
+            /* Smoothly loops the animation indefinitely over 25 seconds */
+            animation: driftRandomly 15s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
+
+    <!-- Randomly Drifting Floating Emoji Background Pattern -->
+    <!-- The negative offsets (-60px) ensure the edges never clip while the pattern is drifting -->
+    <div class="absolute -top-[60px] -left-[60px] -right-[60px] -bottom-[60px] pointer-events-none opacity-[0.04] select-none z-0 overflow-hidden">
+        <svg width="100%" height="100%" class="animate-bg-random" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <!-- Defines a repeating grid unit with built-in native scrolling animations -->
                 <pattern id="emojiPattern" width="160" height="160" patternUnits="userSpaceOnUse">
-                    <!-- Animates the X coordinate infinitely over 30 seconds -->
-                    <animate attributeName="x" from="0" to="160" dur="30s" repeatCount="indefinite" />
-                    <!-- Animates the Y coordinate infinitely over 30 seconds to create a seamless diagonal crawl -->
-                    <animate attributeName="y" from="0" to="160" dur="30s" repeatCount="indefinite" />
-                    
                     <!-- Row 1 -->
                     <text x="20" y="40" font-size="22">🎮</text>
                     <text x="100" y="40" font-size="22">⚽</text>
@@ -28,7 +40,6 @@
                     <text x="100" y="120" font-size="22">🤝</text>
                 </pattern>
             </defs>
-            <!-- Fills the entire background with the moving pattern -->
             <rect width="100%" height="100%" fill="url(#emojiPattern)" />
         </svg>
     </div>
