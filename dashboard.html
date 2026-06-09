@@ -42,16 +42,22 @@
         </div>
     </nav>
 
-    <!-- App Features Navigation Tabs -->
-    <div class="max-w-4xl mx-auto px-4 mt-6 grid grid-cols-2 gap-2">
-        <a href="dashboard.html" class="bg-gray-800 border border-yellow-500/30 text-yellow-500 text-center py-2.5 rounded-xl font-bold text-xs shadow-md">💼 My Escrow Trades</a>
-        <a href="chat.html" class="bg-gray-800/50 hover:bg-gray-800 text-gray-400 text-center py-2.5 rounded-xl font-bold text-xs border border-gray-700 transition">💬 Global Hub Chat</a>
+    <!-- UPDATED: 3-Column Mobile App Navigation Bar -->
+    <div class="max-w-4xl mx-auto px-4 mt-6 grid grid-cols-3 gap-1.5 text-[11px] sm:text-xs">
+        <a href="dashboard.html" class="bg-gray-800 border border-yellow-500/40 text-yellow-500 text-center py-2.5 rounded-xl font-bold shadow-md">
+            💼 Escrow Trades
+        </a>
+        <a href="market.html" class="bg-gray-800/50 hover:bg-gray-800 text-gray-400 text-center py-2.5 rounded-xl font-bold border border-gray-700 transition">
+            🛒 Marketplace
+        </a>
+        <a href="chat.html" class="bg-gray-800/50 hover:bg-gray-800 text-gray-400 text-center py-2.5 rounded-xl font-bold border border-gray-700 transition">
+            💬 Global Chat
+        </a>
     </div>
 
-    <!-- NEW: Sequential Popping Testimony Panel Container -->
+    <!-- Sequential Popping Testimony Panel Container -->
     <div class="max-w-4xl mx-auto px-4 mt-6 h-[46px] flex justify-center items-center">
         <div id="testimonyBox" class="bg-gray-800/40 border border-gray-700/50 rounded-xl px-5 py-2.5 text-xs flex items-center gap-2.5 w-full max-w-lg shadow-sm animate-pop">
-            <!-- Dynamic Injection Content Target -->
             <span id="testimonyEmoji" class="text-base select-none">🤝</span>
             <p class="text-gray-300 flex-1 truncate">
                 <span id="testimonyText">"Exchanged my IG page in 5 mins safely!"</span> 
@@ -103,26 +109,19 @@
         const testimonyAuthor = document.getElementById('testimonyAuthor');
 
         function cycleTestimonials() {
-            // Remove animation class to reset the state pipeline
             testimonyBox.classList.remove('animate-pop');
+            void testimonyBox.offsetWidth; // Force Reflow
             
-            // Forces DOM reflow engine trick to fully re-trigger keyframe actions seamlessly
-            void testimonyBox.offsetWidth;
-            
-            // Advance array loop item index securely
             currentTestimonyIndex = (currentTestimonyIndex + 1) % testimonials.length;
             const currentItem = testimonials[currentTestimonyIndex];
             
-            // Swap text variables inside the panel layout layout
             testimonyEmoji.innerText = currentItem.emoji;
             testimonyText.innerText = currentItem.text;
             testimonyAuthor.innerText = currentItem.author;
             
-            // Reapply layout animation trigger class
             testimonyBox.classList.add('animate-pop');
         }
 
-        // Cycle through testimonies one after the other every 4 seconds
         setInterval(cycleTestimonials, 4000);
 
         // --- Secure Session Check & Data Load Engine ---
