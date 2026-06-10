@@ -6,6 +6,14 @@
     <title>Tradescrow - Marketplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- EmailJS SDK Initialization for direct email alerts -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            // Replace with your actual EmailJS Public Key once you sign up at emailjs.com
+            emailjs.init("YOUR_EMAILJS_PUBLIC_KEY");
+        })();
+    </script>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen pb-16">
 
@@ -44,7 +52,7 @@
 
     <!-- POPUP MODAL: Create Advertisement Listing -->
     <div id="listingModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex justify-center items-center p-4">
-        <div class="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-md p-6 relative animate-pop space-y-4">
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-md p-6 relative space-y-4 max-h-[90vh] overflow-y-auto">
             <div>
                 <h3 class="text-base font-bold text-white">Advertise Your Account</h3>
                 <p class="text-xs text-gray-400">List your digital asset for public buyers to see.</p>
@@ -67,25 +75,31 @@
                     <input type="text" id="assetTitle" placeholder="e.g., 50k active gaming page, level 70 max clothes" required class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
                 </div>
 
+                <!-- NEW FIELD: Account Image Screenshot upload handle -->
+                <div>
+                    <label class="block text-gray-400 mb-1 font-medium">Account Screenshot / Proof Image</label>
+                    <input type="file" id="assetImage" accept="image/*" required class="w-full bg-gray-900 border border-gray-700 rounded-xl p-2.5 text-gray-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-yellow-500 file:text-gray-950 hover:file:bg-yellow-600 outline-none">
+                </div>
+
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-gray-400 mb-1 font-medium">Price (₦ Naira)</label>
                         <input type="number" id="assetPrice" placeholder="50000" required class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-gray-400 mb-1 font-medium">Contact WhatsApp/Telegram</label>
-                        <input type="text" id="assetContact" placeholder="@username or phone" required class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
+                        <label class="block text-gray-400 mb-1 font-medium">WhatsApp Number (with country code)</label>
+                        <input type="text" id="assetContact" placeholder="e.g., 2348012345678" required class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-gray-400 mb-1 font-medium">Your Contact Email (For Escrow)</label>
+                    <label class="block text-gray-400 mb-1 font-medium">Your Contact Email (For Escrow & Alerts)</label>
                     <input type="email" id="sellerEmail" placeholder="yourname@gmail.com" required class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
                 </div>
 
                 <div class="flex gap-2 pt-2">
                     <button type="button" onclick="closeNewListingModal()" class="w-1/2 bg-gray-700 hover:bg-gray-600 text-gray-200 py-3 rounded-xl font-bold transition">Cancel</button>
-                    <button type="submit" class="w-1/2 bg-yellow-500 hover:bg-yellow-600 text-gray-950 py-3 rounded-xl font-bold transition">Post Advertisement</button>
+                    <button type="submit" id="submitBtn" class="w-1/2 bg-yellow-500 hover:bg-yellow-600 text-gray-950 py-3 rounded-xl font-bold transition">Post Advertisement</button>
                 </div>
             </form>
         </div>
@@ -98,15 +112,11 @@
 
         let activeFilter = 'all';
 
-        // Open/Close Modal Utilities
         function openNewListingModal() { document.getElementById('listingModal').classList.remove('hidden'); }
         function closeNewListingModal() { document.getElementById('listingModal').classList.add('hidden'); }
 
-        // Fetch & Render Public Marketplace Listings
         async function fetchMarketplaceListings() {
             const gridContainer = document.getElementById('listingsGrid');
-            
-            // Note: Make sure to create a table named 'marketplace' in Supabase with these exact column handles
             let query = supabaseClient.from('marketplace').select('*').order('created_at', { ascending: false });
             
             if (activeFilter !== 'all') {
@@ -138,45 +148,86 @@
                 if(item.platform === 'Free Fire') badgeColor = "bg-orange-500/10 text-orange-400 border border-orange-500/20";
                 if(item.platform === 'YouTube') badgeColor = "bg-red-500/10 text-red-400 border border-red-500/20";
 
+                // Fallback picture card placeholder if image link missing
+                const displayImage = item.image_url ? item.image_url : 'https://images.unsplash.com/photo-1612287230202-1bf1d85d1bdf?w=500&auto=format&fit=crop&q=60';
+
                 const card = document.createElement('div');
-                card.className = "bg-gray-800 border border-gray-700/70 rounded-2xl p-4 flex flex-col justify-between shadow-md hover:border-gray-600 transition";
+                card.className = "bg-gray-800 border border-gray-700/70 rounded-2xl overflow-hidden flex flex-col justify-between shadow-md hover:border-gray-600 transition";
                 card.innerHTML = `
-                    <div class="space-y-2.5">
-                        <div class="flex justify-between items-center">
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${badgeColor}">${item.platform}</span>
-                            <span class="text-xs text-gray-500 font-mono">${new Date(item.created_at).toLocaleDateString()}</span>
-                        </div>
-                        <div>
-                            <h4 class="text-sm font-bold text-white leading-snug break-words">${item.title}</h4>
-                            <p class="text-[11px] text-gray-400 mt-1 font-mono break-all">Seller Email: ${item.seller_email}</p>
-                        </div>
+                    <!-- Account visual display slot -->
+                    <div class="h-44 w-full bg-gray-950 relative overflow-hidden border-b border-gray-700/50">
+                        <img src="${displayImage}" alt="Proof" class="w-full h-full object-cover">
+                        <span class="absolute top-3 left-3 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${badgeColor}">${item.platform}</span>
                     </div>
 
-                    <div class="mt-4 pt-3 border-t border-gray-700/50 flex flex-col gap-2">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs text-gray-400">Handle/Contact: <strong class="text-yellow-500">${item.contact_handle}</strong></span>
-                            <span class="text-sm font-extrabold text-green-400">₦${item.price.toLocaleString()}</span>
+                    <div class="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs text-gray-500 font-mono">${new Date(item.created_at).toLocaleDateString()}</span>
+                                <span class="text-sm font-extrabold text-green-400">₦${item.price.toLocaleString()}</span>
+                            </div>
+                            <h4 class="text-sm font-bold text-white leading-snug break-words">${item.title}</h4>
+                            <p class="text-[10px] text-gray-400 mt-1 font-mono break-all">Seller: ${item.seller_email}</p>
                         </div>
-                        <a href="create.html?seller=${encodeURIComponent(item.seller_email)}&amount=${item.price}&type=${encodeURIComponent(item.platform)}" 
-                           class="w-full mt-1 bg-gray-900 border border-gray-700 hover:bg-yellow-500 hover:text-gray-950 text-gray-300 text-center py-2 rounded-xl font-bold text-xs transition">
-                           🔒 Deal via Escrow
-                        </a>
+
+                        <div class="pt-3 border-t border-gray-700/50 space-y-2">
+                            <!-- UPGRADED Action: Trigger WhatsApp dispatch and EmailJS directly -->
+                            <button onclick="contactSeller('${item.contact_handle}', '${item.seller_email}', '${item.platform}', '${item.price}', \`${item.title.replace(/'/g, "\\'")}\`)" 
+                               class="w-full bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-xl font-bold text-xs transition flex justify-center items-center gap-1.5 shadow-sm">
+                               💬 Contact Seller Now
+                            </button>
+                            <a href="create.html?seller=${encodeURIComponent(item.seller_email)}&amount=${item.price}&type=${encodeURIComponent(item.platform)}" 
+                               class="w-full block bg-gray-900 border border-gray-700 hover:bg-yellow-500 hover:text-gray-950 text-gray-300 text-center py-2 rounded-xl font-bold text-xs transition">
+                               🔒 Deal via Escrow Room
+                            </a>
+                        </div>
                     </div>
                 `;
                 gridContainer.appendChild(card);
             });
         }
 
-        // Handle Form Submission
         async function handleCreateListing(e) {
             e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Uploading Asset...";
             
             const platform = document.getElementById('assetPlatform').value;
             const title = document.getElementById('assetTitle').value;
             const price = parseFloat(document.getElementById('assetPrice').value);
             const contact = document.getElementById('assetContact').value;
             const email = document.getElementById('sellerEmail').value;
+            const imageFile = document.getElementById('assetImage').files[0];
 
+            let imageUrl = null;
+
+            // 1. Image upload processing step to Supabase Storage Bucket
+            if (imageFile) {
+                const fileExt = imageFile.name.split('.').pop();
+                const fileName = `${Math.random()}.${fileExt}`;
+                const filePath = `listings/${fileName}`;
+
+                // Ensure a bucket named 'account-proofs' exists in your Supabase dashboard and is set to public
+                const { error: uploadError } = await supabaseClient.storage
+                    .from('account-proofs')
+                    .upload(filePath, imageFile);
+
+                if (uploadError) {
+                    alert("Storage upload problem: " + uploadError.message);
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "Post Advertisement";
+                    return;
+                }
+
+                const { data: publicUrlData } = supabaseClient.storage
+                    .from('account-proofs')
+                    .getPublicUrl(filePath);
+                
+                imageUrl = publicUrlData.publicUrl;
+            }
+
+            // 2. Insert record row including structural image link to Database Table
             const { error } = await supabaseClient
                 .from('marketplace')
                 .insert([{ 
@@ -184,8 +235,12 @@
                     title: title, 
                     price: price, 
                     contact_handle: contact, 
-                    seller_email: email 
+                    seller_email: email,
+                    image_url: imageUrl 
                 }]);
+
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Post Advertisement";
 
             if (error) {
                 alert("Error posting ad: " + error.message);
@@ -197,25 +252,45 @@
             fetchMarketplaceListings();
         }
 
-        // Handle category tab filtering switching
+        // NEW LOGIC ENGINE: Handle multi-channel notifications (WhatsApp link + Automatic EmailJS dispatch)
+        async function contactSeller(phone, email, platform, price, title) {
+            const formattedPrice = parseFloat(price).toLocaleString();
+            
+            // Construct crisp text for cross-platform dispatch messages
+            const textMsg = `Hello! I saw your listing on Tradescrow. I am highly interested in buying your ${platform} Account ("${title}") listed for ₦${formattedPrice}. Let's discuss details and open our secure escrow trade room!`;
+            
+            // Channel 1: Automatic silent client email push alert utilizing EmailJS
+            try {
+                // Ensure to configure your Template variables to take: to_email, asset_type, asset_title, asset_price
+                await emailjs.send("YOUR_EMAILJS_SERVICE_ID", "YOUR_EMAILJS_TEMPLATE_ID", {
+                    to_email: email,
+                    asset_type: platform,
+                    asset_title: title,
+                    asset_price: formattedPrice
+                });
+                console.log("Email dispatch successfully cleared to: " + email);
+            } catch (err) {
+                console.error("Automated background email transmission skipped/failed: ", err);
+            }
+
+            // Channel 2: Immediate WhatsApp Deep Link Redirection
+            const cleanPhone = phone.replace(/\+/g, '').trim(); 
+            const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(textMsg)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
         function filterPlatform(platform) {
             activeFilter = platform;
-            
-            // Visual toggle behavior for buttons
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('bg-yellow-500', 'text-gray-950', 'font-bold');
                 btn.classList.add('bg-gray-800', 'text-gray-300', 'font-medium', 'border', 'border-gray-700');
             });
-            
             event.target.classList.remove('bg-gray-800', 'text-gray-300', 'font-medium', 'border', 'border-gray-700');
             event.target.classList.add('bg-yellow-500', 'text-gray-950', 'font-bold');
-
             fetchMarketplaceListings();
         }
 
-        // Initial Data Invocation
         fetchMarketplaceListings();
     </script>
 </body>
 </html>
-                          
