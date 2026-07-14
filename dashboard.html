@@ -6,36 +6,16 @@
     <title>Tradescrow - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     
     <style>
-        body {
-            font-family: 'Space Grotesk', sans-serif;
-        }
-        .tech-mono {
-            font-family: 'Share Tech Mono', monospace;
-        }
-        
-        /* Custom glow effects matching video's aura */
-        .neon-glow-gold {
-            box-shadow: 0 0 30px rgba(234, 179, 8, 0.08), inset 0 0 15px rgba(234, 179, 8, 0.03);
-        }
-        .neon-border {
-            border: 1px solid rgba(234, 179, 8, 0.15);
-        }
-        .neon-border-glow:hover {
-            border-color: rgba(234, 179, 8, 0.5);
-            box-shadow: 0 0 15px rgba(234, 179, 8, 0.15);
-        }
-
         /* Custom keyframes for a clean, elastic popping entry effect */
         @keyframes popInEffect {
             0% { 
-                transform: scale(0.92); 
+                transform: scale(0.88); 
                 opacity: 0; 
             }
             70% { 
-                transform: scale(1.02); 
+                transform: scale(1.03); 
                 opacity: 0.9; 
             }
             100% { 
@@ -49,67 +29,60 @@
         }
     </style>
 </head>
-<body class="bg-[#08080c] text-gray-200 min-h-screen pb-12 relative overflow-x-hidden">
-
-    <!-- Ambient Grid & Neon Blur Background Elements -->
-    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(234,179,8,0.015),transparent_60%)] pointer-events-none"></div>
-    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-yellow-500/5 rounded-full blur-[140px] pointer-events-none"></div>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen pb-12">
 
     <!-- Navigation Header -->
-    <nav class="bg-[#0c0d12]/90 backdrop-blur-md border-b border-gray-900 px-4 py-4 sticky top-0 z-50">
+    <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></span>
-                <h1 class="text-md font-bold tracking-[0.2em] text-white uppercase tech-mono">TRADESCROW // DB</h1>
-            </div>
+            <h1 class="text-xl font-bold text-yellow-500 tracking-wide">🎮 Dashboard</h1>
             <div class="flex items-center gap-4">
-                <span id="userBadge" class="text-[10px] text-yellow-500/80 border border-yellow-500/20 px-3 py-1 bg-yellow-500/5 font-mono tracking-wider rounded-none">...</span>
-                <button onclick="handleLogout()" class="text-[10px] text-red-400 hover:text-red-500 uppercase tracking-widest font-semibold transition tech-mono">Logout_</button>
+                <span id="userBadge" class="text-xs text-gray-400 border border-gray-700 px-3 py-1 rounded-xl bg-gray-950 font-mono">...</span>
+                <button onclick="handleLogout()" class="text-xs text-red-400 hover:text-red-500 font-semibold transition">Logout</button>
             </div>
         </div>
     </nav>
 
-    <!-- 3-Column Mobile App Navigation Bar (HUD styled) -->
-    <div class="max-w-4xl mx-auto px-4 mt-6 grid grid-cols-3 gap-2.5 text-[10px] sm:text-xs tech-mono uppercase tracking-widest">
-        <a href="dashboard.html" class="bg-[#12131a] border border-yellow-500/60 text-yellow-500 text-center py-3 font-bold shadow-md shadow-yellow-500/5">
-            [ 💼 ESCROW TRADES ]
+    <!-- UPDATED: 3-Column Mobile App Navigation Bar -->
+    <div class="max-w-4xl mx-auto px-4 mt-6 grid grid-cols-3 gap-1.5 text-[11px] sm:text-xs">
+        <a href="dashboard.html" class="bg-gray-800 border border-yellow-500/40 text-yellow-500 text-center py-2.5 rounded-xl font-bold shadow-md">
+            💼 Escrow Trades
         </a>
-        <a href="market.html" class="bg-[#0c0d12]/60 hover:bg-[#12131a] text-gray-500 hover:text-gray-200 text-center py-3 font-bold border border-gray-900 transition duration-300">
-            🛒 MARKETPLACE
+        <a href="market.html" class="bg-gray-800/50 hover:bg-gray-800 text-gray-400 text-center py-2.5 rounded-xl font-bold border border-gray-700 transition">
+            🛒 Marketplace
         </a>
-        <a href="chat.html" class="bg-[#0c0d12]/60 hover:bg-[#12131a] text-gray-500 hover:text-gray-200 text-center py-3 font-bold border border-gray-900 transition duration-300">
-            💬 GLOBAL CHAT
+        <a href="chat.html" class="bg-gray-800/50 hover:bg-gray-800 text-gray-400 text-center py-2.5 rounded-xl font-bold border border-gray-700 transition">
+            💬 Global Chat
         </a>
     </div>
 
-    <!-- Sequential Popping Testimony Panel Container (Styled like live terminal notifications) -->
+    <!-- Sequential Popping Testimony Panel Container -->
     <div class="max-w-4xl mx-auto px-4 mt-6 h-[46px] flex justify-center items-center">
-        <div id="testimonyBox" class="bg-[#0e0f14]/80 backdrop-blur-md border border-gray-900 rounded-xl px-5 py-2.5 text-xs flex items-center gap-2.5 w-full max-w-lg shadow-sm animate-pop">
+        <div id="testimonyBox" class="bg-gray-800/40 border border-gray-700/50 rounded-xl px-5 py-2.5 text-xs flex items-center gap-2.5 w-full max-w-lg shadow-sm animate-pop">
             <span id="testimonyEmoji" class="text-base select-none">🤝</span>
-            <p class="text-gray-400 flex-1 truncate tech-mono uppercase text-[10px] tracking-wider">
+            <p class="text-gray-300 flex-1 truncate">
                 <span id="testimonyText">"Exchanged my IG page in 5 mins safely!"</span> 
-                <span id="testimonyAuthor" class="text-yellow-500/60 font-medium ml-1.5">- @chidi_crypto</span>
+                <span id="testimonyAuthor" class="text-gray-500 font-medium ml-1.5">- @chidi_crypto</span>
             </p>
         </div>
     </div>
 
     <!-- Main Workspace Dashboard content panel -->
-    <main class="max-w-4xl mx-auto px-4 mt-8">
+    <main class="max-w-4xl mx-auto px-4 mt-6">
         <div class="flex justify-between items-center mb-6">
             <div>
-                <h2 class="text-lg font-black text-white uppercase tracking-wider">Your Escrow Agreements</h2>
-                <p class="text-[11px] text-gray-500 tracking-wide">Track incoming and outgoing digital asset transactions on-chain.</p>
+                <h2 class="text-lg font-bold text-white">Your Escrow Agreements</h2>
+                <p class="text-xs text-gray-400">Track incoming and outgoing digital asset transactions.</p>
             </div>
-            <a href="create.html" class="tech-mono bg-yellow-500 hover:bg-yellow-600 text-black font-black px-5 py-3 text-[10px] tracking-widest uppercase transition duration-300 shadow-lg shadow-yellow-500/10">
-                + New Contract [→]
+            <a href="create.html" class="bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg">
+                + New Contract
             </a>
         </div>
 
         <!-- Dynamic List Container Box -->
         <div id="contractsList" class="space-y-4">
-            <div class="text-center py-16 bg-[#0e0f14]/80 backdrop-blur-xl border border-gray-950 rounded-3xl">
-                <span class="animate-spin inline-block w-6 h-6 border-2 border-yellow-500 border-t-transparent rounded-full mb-3"></span>
-                <p class="text-[10px] tracking-widest text-gray-500 uppercase tech-mono">Querying live contract data registry...</p>
+            <div class="text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl">
+                <span class="animate-spin inline-block w-6 h-6 border-2 border-yellow-500 border-t-transparent rounded-full mb-2"></span>
+                <p class="text-xs text-gray-400">Querying live contract data registry...</p>
             </div>
         </div>
     </main>
@@ -177,19 +150,16 @@
                 .order('created_at', { ascending: false });
 
             if (error) {
-                listContainer.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-none text-xs text-center tech-mono uppercase tracking-widest">Sync Error: ${error.message}</div>`;
+                listContainer.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center">Sync Error: ${error.message}</div>`;
                 return;
             }
 
             if (!data || data.length === 0) {
                 listContainer.innerHTML = `
-                    <div class="text-center py-16 bg-[#0e0f14]/80 backdrop-blur-xl border border-gray-900 rounded-3xl px-4 relative overflow-hidden">
-                        <div class="absolute top-2 left-2 tech-mono text-[8px] text-gray-600">[ TRD_EMPTY ]</div>
-                        <p class="text-sm font-bold text-gray-300 uppercase tracking-wider">No active contracts found</p>
-                        <p class="text-[11px] text-gray-500 mt-1 mb-6">You haven't initialized or joined any secure escrow rooms yet.</p>
-                        <a href="create.html" class="inline-block tech-mono bg-[#12131a] hover:bg-[#181922] text-yellow-500 hover:text-yellow-400 text-[10px] tracking-widest uppercase px-5 py-3 border border-yellow-500/30 hover:border-yellow-500 transition duration-300">
-                            Create First Contract [→]
-                        </a>
+                    <div class="text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl px-4">
+                        <p class="text-sm font-semibold text-gray-300">No active contracts found</p>
+                        <p class="text-xs text-gray-500 mt-1 mb-4">You haven't initialized or joined any escrow deals yet.</p>
+                        <a href="create.html" class="inline-block bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs px-4 py-2 rounded-xl border border-gray-600 transition">Create Your First Contract</a>
                     </div>`;
                 return;
             }
@@ -198,33 +168,30 @@
             
             data.forEach(trade => {
                 const isBuyer = trade.buyer_email.toLowerCase() === activeUser.toLowerCase();
-                const roleBadge = isBuyer ? 
-                    '<span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 tech-mono">Buyer</span>' : 
-                    '<span class="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 tech-mono">Seller</span>';
+                const roleBadge = isBuyer ? '<span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Buyer</span>' : '<span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Seller</span>';
                 
                 let statusBadge = '';
-                if(trade.status === 'pending') statusBadge = '<span class="text-yellow-500/80 font-medium tracking-wider text-[11px] uppercase">Awaiting Deposit</span>';
-                if(trade.status === 'paid') statusBadge = '<span class="text-green-400 font-medium animate-pulse tracking-wider text-[11px] uppercase">🔒 Escrow Locked</span>';
-                if(trade.status === 'released') statusBadge = '<span class="text-gray-500 font-medium tracking-wider text-[11px] uppercase">Settle Closed</span>';
-                if(trade.status === 'disputed') statusBadge = '<span class="text-red-400 font-bold tracking-wider text-[11px] uppercase">🛑 Disputed Order</span>';
+                if(trade.status === 'pending') statusBadge = '<span class="text-yellow-500 font-medium">Awaiting Deposit</span>';
+                if(trade.status === 'paid') statusBadge = '<span class="text-green-400 font-medium animate-pulse">🔒 Escrow Locked</span>';
+                if(trade.status === 'released') statusBadge = '<span class="text-gray-400 font-medium">Settle Closed</span>';
+                if(trade.status === 'disputed') statusBadge = '<span class="text-red-400 font-bold">🛑 Disputed Order</span>';
 
                 const card = document.createElement('div');
-                card.className = "bg-[#0e0f14]/85 backdrop-blur-xl border border-gray-900 rounded-2xl p-5 shadow-lg neon-border-glow transition duration-300 cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden";
+                card.className = "bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-md hover:border-gray-600 transition cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4";
                 card.onclick = () => window.location.href = `room.html?id=${trade.id}`;
                 
                 card.innerHTML = `
-                    <div class="space-y-2 flex-1">
-                        <div class="flex items-center gap-3">
-                            <h3 class="font-black text-white text-md uppercase tracking-wider">${trade.asset_type}</h3>
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-white text-sm">${trade.asset_type}</h3>
                             ${roleBadge}
                         </div>
-                        <p class="text-[10px] text-gray-500 font-mono tracking-tight break-all uppercase">// Partner: ${isBuyer ? trade.seller_email : trade.buyer_email}</p>
+                        <p class="text-xs text-gray-400 font-mono break-all">Partner: ${isBuyer ? trade.seller_email : trade.buyer_email}</p>
                     </div>
-                    <div class="flex sm:flex-col justify-between items-end w-full sm:w-auto border-t sm:border-0 border-gray-900/60 pt-3 sm:pt-0 tech-mono">
-                        <span class="text-md font-black text-green-400 tracking-wider">₦${trade.amount.toLocaleString()}</span>
-                        <span class="text-xs mt-1">${statusBadge}</span>
+                    <div class="flex sm:flex-col justify-between items-end w-full sm:w-auto border-t sm:border-0 border-gray-700/50 pt-2 sm:pt-0">
+                        <span class="text-sm font-bold text-green-400">₦${trade.amount.toLocaleString()}</span>
+                        <span class="text-xs">${statusBadge}</span>
                     </div>
-                    <div class="absolute bottom-2 left-2 tech-mono text-[7px] text-gray-800">ROOM_ID: ${trade.id.substring(0,8).toUpperCase()}</div>
                 `;
                 listContainer.appendChild(card);
             });
