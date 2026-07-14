@@ -3,176 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tradescrow // Next-Gen Escrow Portal</title>
+    <title>Tradescrow - Secure Gateway</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
     <style>
-        body {
-            font-family: 'Space Grotesk', sans-serif;
+        /* Custom keyframes to simulate continuous, non-linear random floating movement */
+        @keyframes driftRandomly {
+            0% { transform: translate(0px, 0px); }
+            20% { transform: translate(50px, -30px); }
+            40% { transform: translate(-30px, 60px); }
+            60% { transform: translate(40px, 40px); }
+            80% { transform: translate(-50px, -40px); }
+            100% { transform: translate(0px, 0px); }
         }
-        .tech-mono {
-            font-family: 'Share Tech Mono', monospace;
-        }
-        
-        /* Smooth tactile hover glow */
-        .glow-hover {
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .glow-hover:hover {
-            border-color: rgba(234, 179, 8, 0.4);
-            box-shadow: 0 0 25px rgba(234, 179, 8, 0.08);
-            transform: translateY(-2px);
+
+        .animate-bg-random {
+            /* Smoothly loops the animation indefinitely over 25 seconds */
+            animation: driftRandomly 15s ease-in-out infinite;
         }
     </style>
 </head>
-<body class="bg-[#060609] text-gray-200 min-h-screen flex flex-col justify-between overflow-x-hidden relative selection:bg-yellow-500 selection:text-black">
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
 
-    <!-- Subtle Ambient glow (Behind elements) -->
-    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-yellow-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+    <!-- Randomly Drifting Floating Emoji Background Pattern -->
+    <!-- The negative offsets (-60px) ensure the edges never clip while the pattern is drifting -->
+        <!-- Randomly Drifting Floating Emoji Background Pattern -->
+    <!-- The negative offsets (-60px) ensure the edges never clip while the pattern is drifting -->
+    <div class="absolute -top-[60px] -left-[60px] -right-[60px] -bottom-[60px] pointer-events-none opacity-[0.04] select-none z-0 overflow-hidden">
+        <svg width="100%" height="100%" class="animate-bg-random" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <pattern id="emojiPattern" width="160" height="160" patternUnits="userSpaceOnUse">
+                    <!-- Row 1 -->
+                    <text x="20" y="40" font-size="22">🎮</text>
+                    <text x="100" y="40" font-size="22">⚽</text>
+                    <!-- Row 2 -->
+                    <text x="20" y="120" font-size="22">😁</text>
+                    <text x="100" y="120" font-size="22">🤝</text>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#emojiPattern)" />
+        </svg>
+    </div>
 
-    <!-- CLEAN NAVIGATION -->
-    <nav class="w-full max-w-4xl mx-auto px-6 py-6 flex justify-between items-center relative z-20 border-b border-gray-900/60">
-        <div class="flex items-center gap-3">
-            <div class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
-            <span class="tech-mono text-xs tracking-widest text-yellow-500 uppercase font-bold">TRADESCROW // ACTIVE</span>
+
+    <!-- Main Content Container -->
+    <div class="max-w-md w-full bg-gray-800 border border-gray-700 rounded-2xl p-8 shadow-xl z-10">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-yellow-500 tracking-wide">🎮 Tradescrow</h1>
+            <p class="text-gray-400 text-sm mt-2">Decentralized P2P Account Escrow Portal</p>
         </div>
-        <div class="flex items-center gap-6 text-[10px] tracking-widest text-gray-500 uppercase tech-mono">
-            <a href="market.html" class="hover:text-yellow-500 transition duration-300">Marketplace</a>
-        </div>
-    </nav>
 
-    <!-- PORTAL ACCESS PANEL -->
-    <main class="flex-grow flex items-center justify-center relative z-10 px-6 py-12">
-        
-        <div class="w-full max-w-md bg-[#0c0d12]/90 backdrop-blur-xl border border-gray-900 rounded-3xl p-8 md:p-10 glow-hover relative">
-            <div class="absolute top-4 left-4 tech-mono text-[8px] text-gray-600">[ TRD_GATEWAY ]</div>
-            
-            <div class="space-y-6 text-center">
-                <!-- Status/Icon Indicator -->
-                <div id="statusIcon" class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-2xl transition-all duration-300">
-                    🔒
-                </div>
-
-                <div class="space-y-2">
-                    <h2 class="text-2xl font-black text-white tracking-tight uppercase">
-                        Secure Access
-                    </h2>
-                    <p class="text-[10px] text-yellow-500 tracking-widest uppercase font-bold tech-mono">
-                        Passwordless Security Tunnel
-                    </p>
-                </div>
-
-                <!-- Live Supabase Login Form -->
-                <form id="loginForm" class="space-y-4 text-left pt-2">
-                    <div class="relative">
-                        <label class="block text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-2 tech-mono">
-                            // ENTER ACCOUNT EMAIL
-                        </label>
-                        <input id="emailInput" type="email" placeholder="name@example.com" required 
-                            class="w-full bg-[#050508]/80 border border-gray-900 focus:border-yellow-500/60 rounded-2xl py-4 px-5 text-sm text-white placeholder-gray-700 outline-none transition duration-300 tech-mono">
-                    </div>
-
-                    <button type="submit" id="submitBtn"
-                        class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-black uppercase text-xs tracking-widest py-4 rounded-2xl transition duration-300 shadow-lg shadow-yellow-500/5 flex justify-center items-center gap-2">
-                        <span id="btnText">Request Login Key</span>
-                        <span id="btnArrow">[→]</span>
-                    </button>
-                </form>
-
-                <!-- Status Feedback Overlay Messages -->
-                <div id="feedbackMessage" class="hidden text-xs py-3 px-4 rounded-xl tech-mono text-center"></div>
-
-                <p class="text-[10px] text-gray-600">
-                    * A one-time secure login token link will be instantly dispatched to your inbox.
-                </p>
+        <form id="authForm" class="space-y-5">
+            <div id="emailSection">
+                <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Enter Your Email Address</label>
+                <input id="userEmail" type="email" required placeholder="name@example.com" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-yellow-500 transition">
+                <p class="text-[11px] text-gray-500 mt-1.5">A secure authorization code will be sent to your inbox.</p>
             </div>
+
+            <div id="otpSection" class="hidden">
+                <label class="block text-xs font-bold uppercase tracking-wider text-yellow-500 mb-2">Enter 6-Digit Verification Code</label>
+                <input id="otpToken" type="text" placeholder="123456" maxlength="6" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3.5 text-center text-xl font-bold tracking-widest text-white focus:outline-none focus:border-yellow-500 transition">
+                <p class="text-[11px] text-gray-400 mt-1.5 text-center">Check your email spam folder if you don't see it right away.</p>
+            </div>
+
+            <button type="submit" id="authBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-3.5 px-4 rounded-xl shadow-lg transition duration-150 text-sm flex justify-center items-center gap-2">
+                Send Secret Code →
+            </button>
+        </form>
+    </div>
+
+    <div class="max-w-md w-full bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl mt-6 z-10">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-yellow-500 mb-3 flex items-center gap-2">
+            📖 How Tradescrow Works
+        </h2>
+        <div class="relative w-full aspect-video rounded-xl overflow-hidden border border-gray-700 bg-gray-950">
+            <iframe class="w-full h-full" src="https://www.youtube.com/embed/4SeAcQRruh4?si=M4s1wiKFb4D5gpwq" title="Tradescrow Tutorial" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
         </div>
+    </div>
 
-    </main>
-
-    <!-- FOOTER TECHNICAL BAR -->
-    <footer class="w-full max-w-4xl mx-auto px-6 py-6 border-t border-gray-900/60 relative z-20 flex justify-between items-center text-[10px] tech-mono text-gray-600">
-        <span class="text-yellow-500/40">// AES_256 SECURED</span>
-        <span>© 2026 TRADESCROW</span>
-    </footer>
-
-    <!-- SUPABASE SECURITY LOGIC -->
     <script>
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudFFoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const loginForm = document.getElementById('loginForm');
-        const emailInput = document.getElementById('emailInput');
-        const submitBtn = document.getElementById('submitBtn');
-        const btnText = document.getElementById('btnText');
-        const btnArrow = document.getElementById('btnArrow');
-        const feedbackMessage = document.getElementById('feedbackMessage');
-        const statusIcon = document.getElementById('statusIcon');
+        let currentStep = 'email'; 
 
-        // Check if user is already signed in on page load
+        const authForm = document.getElementById('authForm');
+        const emailSection = document.getElementById('emailSection');
+        const otpSection = document.getElementById('otpSection');
+        const authBtn = document.getElementById('authBtn');
+
         async function checkSession() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
+            const { data } = await supabaseClient.auth.getSession();
+            if (data.session) {
                 window.location.href = 'dashboard.html';
             }
         }
         checkSession();
 
-        // Handle OTP request
-        loginForm.addEventListener('submit', async (e) => {
+        authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = emailInput.value.trim();
+            const email = document.getElementById('userEmail').value.trim().toLowerCase();
 
-            if (!email) return;
+            if (currentStep === 'email') {
+                authBtn.disabled = true;
+                authBtn.innerText = "Sending Code...";
 
-            // Trigger sleek Loading Animation on the submit button
-            submitBtn.disabled = true;
-            btnText.innerText = "Authorizing Security Link...";
-            btnArrow.innerHTML = `<span class="animate-spin inline-block w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full"></span>`;
-            statusIcon.innerHTML = "🔑";
-            statusIcon.classList.add('animate-pulse');
-
-            try {
-                const { error } = await supabaseClient.auth.signInWithOtp({
+                const { error } = await supabaseClient.auth.signInWithOtp({ 
                     email: email,
                     options: {
-                        emailRedirectTo: window.location.origin + '/dashboard.html'
+                        shouldCreateUser: true
                     }
                 });
 
-                feedbackMessage.classList.remove('hidden', 'bg-red-500/10', 'text-red-400', 'border-red-500/20');
+                if (error) {
+                    alert("Error sending code: " + error.message);
+                    authBtn.disabled = false;
+                    authBtn.innerText = "Send Secret Code →";
+                } else {
+                    emailSection.classList.add('hidden');
+                    otpSection.classList.remove('hidden');
+                    authBtn.disabled = false;
+                    authBtn.innerText = "Verify & Access Workspace →";
+                    currentStep = 'otp';
+                }
+
+            } else if (currentStep === 'otp') {
+                const token = document.getElementById('otpToken').value.trim();
+                authBtn.disabled = true;
+                authBtn.innerText = "Verifying Code...";
+
+                const { data, error } = await supabaseClient.auth.verifyOtp({
+                    email: email,
+                    token: token,
+                    type: 'email'
+                });
 
                 if (error) {
-                    // Micro-interaction error style
-                    feedbackMessage.className = "text-xs py-3 px-4 rounded-xl tech-mono text-center bg-red-500/10 text-red-400 border border-red-500/20 mt-2";
-                    feedbackMessage.innerText = `[ ERROR: ${error.message} ]`;
-                    statusIcon.innerHTML = "❌";
-                    statusIcon.classList.remove('animate-pulse');
-                    resetBtn();
+                    alert("Invalid or expired code. Please try again. " + error.message);
+                    authBtn.disabled = false;
+                    authBtn.innerText = "Verify & Access Workspace →";
                 } else {
-                    // Success Micro-interaction transition
-                    feedbackMessage.className = "text-xs py-3 px-4 rounded-xl tech-mono text-center bg-green-500/10 text-green-400 border border-green-500/20 mt-2";
-                    feedbackMessage.innerText = "✓ Check your email inbox! We sent you an encrypted link.";
-                    statusIcon.innerHTML = "✉️";
-                    statusIcon.classList.remove('animate-pulse');
-                    loginForm.reset();
-                    resetBtn(true);
+                    window.location.href = 'dashboard.html';
                 }
-            } catch (err) {
-                feedbackMessage.className = "text-xs py-3 px-4 rounded-xl tech-mono text-center bg-red-500/10 text-red-400 border border-red-500/20 mt-2";
-                feedbackMessage.innerText = `[ EXCEPTION: ${err.message} ]`;
-                resetBtn();
             }
         });
-
-        function resetBtn(success = false) {
-            submitBtn.disabled = false;
-            btnText.innerText = success ? "Request Sent Successfully" : "Request Login Key";
-            btnArrow.innerText = "[→]";
-        }
     </script>
+
 </body>
 </html>
