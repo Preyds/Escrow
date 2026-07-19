@@ -6,19 +6,21 @@
     <title>Tradescrow - Marketplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- EmailJS SDK Initialization for direct email alerts -->
+    <!-- EmailJS SDK Initialization -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script type="text/javascript">
         (function() {
-            // Replace with your actual EmailJS Public Key once you sign up at emailjs.com
             emailjs.init("2P9_CTCv2Or7YHx3Z");
         })();
     </script>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen pb-16">
 
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
     <!-- Navigation Header -->
-    <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50">
+    <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-40">
         <div class="max-w-5xl mx-auto flex justify-between items-center">
             <h1 class="text-xl font-bold text-yellow-500 tracking-wide">🛒 P2P Marketplace</h1>
             <div class="flex items-center gap-3">
@@ -28,21 +30,34 @@
         </div>
     </nav>
 
+    <!-- Search & Price Sorting Controls -->
+    <div class="max-w-5xl mx-auto px-4 mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="sm:col-span-2">
+            <input type="text" id="searchInput" oninput="handleSearch()" placeholder="🔍 Search listings by title or keywords..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-xs text-white focus:border-yellow-500 outline-none transition">
+        </div>
+        <div>
+            <select id="sortOption" onchange="fetchMarketplaceListings()" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-gray-300 focus:border-yellow-500 outline-none transition">
+                <option value="newest">Sort by: Newest First</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+            </select>
+        </div>
+    </div>
+
     <!-- Platform Category Filters -->
-    <div class="max-w-5xl mx-auto px-4 mt-6">
+    <div class="max-w-5xl mx-auto px-4 mt-4">
         <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-none text-xs">
-            <button onclick="filterPlatform('all')" class="bg-yellow-500 text-gray-950 font-bold px-4 py-2 rounded-xl whitespace-nowrap filter-btn">All Assets</button>
-            <button onclick="filterPlatform('Instagram')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium px-4 py-2 rounded-xl whitespace-nowrap border border-gray-700 filter-btn">📸 Instagram</button>
-            <button onclick="filterPlatform('TikTok')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium px-4 py-2 rounded-xl whitespace-nowrap border border-gray-700 filter-btn">🎵 TikTok</button>
-            <button onclick="filterPlatform('Free Fire')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium px-4 py-2 rounded-xl whitespace-nowrap border border-gray-700 filter-btn">🎮 Free Fire</button>
-            <button onclick="filterPlatform('YouTube')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium px-4 py-2 rounded-xl whitespace-nowrap border border-gray-700 filter-btn">📺 YouTube</button>
+            <button onclick="filterPlatform('all', this)" class="bg-yellow-500 text-gray-950 font-bold px-4 py-2 rounded-xl whitespace-nowrap filter-btn">All Assets</button>
+            <button onclick="filterPlatform('Instagram', this)" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium px-4 py-2 rounded-xl whitespace-nowrap border border-gray-700 filter-btn">📸 Instagram</button>
+            <button onclick="filterPlatform('TikTok', this)" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium px-4 py-2 rounded-xl whitespace-nowrap border border-gray-700 filter-btn">🎵 TikTok</button>
+            <button onclick="filterPlatform('Free Fire', this)" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium px-4 py-2 rounded-xl whitespace-nowrap border border-gray-700 filter-btn">🎮 Free Fire</button>
+            <button onclick="filterPlatform('YouTube', this)" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium px-4 py-2 rounded-xl whitespace-nowrap border border-gray-700 filter-btn">📺 YouTube</button>
         </div>
     </div>
 
     <!-- Main Marketplace Grid -->
     <main class="max-w-5xl mx-auto px-4 mt-6">
         <div id="listingsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <!-- Loading Skeleton placeholder -->
             <div class="text-center py-12 col-span-full bg-gray-800 border border-gray-700 rounded-2xl">
                 <span class="animate-spin inline-block w-6 h-6 border-2 border-yellow-500 border-t-transparent rounded-full mb-2"></span>
                 <p class="text-xs text-gray-400">Loading active marketplace listings...</p>
@@ -50,7 +65,7 @@
         </div>
     </main>
 
-    <!-- POPUP MODAL: Create Advertisement Listing -->
+    <!-- MODAL 1: Create Advertisement Listing -->
     <div id="listingModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex justify-center items-center p-4">
         <div class="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-md p-6 relative space-y-4 max-h-[90vh] overflow-y-auto">
             <div>
@@ -75,9 +90,8 @@
                     <input type="text" id="assetTitle" placeholder="e.g., 50k active gaming page, level 70 max clothes" required class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
                 </div>
 
-                <!-- NEW FIELD: Account Image Screenshot upload handle -->
                 <div>
-                    <label class="block text-gray-400 mb-1 font-medium">Account Screenshot / Proof Image</label>
+                    <label class="block text-gray-400 mb-1 font-medium">Account Screenshot / Proof Image (Max 5MB)</label>
                     <input type="file" id="assetImage" accept="image/*" required class="w-full bg-gray-900 border border-gray-700 rounded-xl p-2.5 text-gray-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-yellow-500 file:text-gray-950 hover:file:bg-yellow-600 outline-none">
                 </div>
 
@@ -87,7 +101,7 @@
                         <input type="number" id="assetPrice" placeholder="50000" required class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-gray-400 mb-1 font-medium">WhatsApp Number (with country code)</label>
+                        <label class="block text-gray-400 mb-1 font-medium">WhatsApp Number</label>
                         <input type="text" id="assetContact" placeholder="e.g., 2348012345678" required class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
                     </div>
                 </div>
@@ -105,20 +119,68 @@
         </div>
     </div>
 
+    <!-- MODAL 2: Full-Screen Proof Image Lightbox -->
+    <div id="imageLightboxModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex flex-col justify-center items-center p-4 cursor-pointer" onclick="closeImageLightbox()">
+        <p class="text-xs text-gray-400 mb-2 font-mono">Click anywhere to close preview</p>
+        <img id="lightboxImage" src="" class="max-w-full max-h-[85vh] rounded-2xl border border-gray-700 object-contain shadow-2xl">
+    </div>
+
     <script>
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let activeFilter = 'all';
+        let rawListingsData = [];
 
         function openNewListingModal() { document.getElementById('listingModal').classList.remove('hidden'); }
         function closeNewListingModal() { document.getElementById('listingModal').classList.add('hidden'); }
 
+        // --- Custom Toast Notification ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+            
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-xl transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto flex items-center gap-2`;
+            toast.innerHTML = `<span>${type === 'success' ? '✓' : '⚠️'}</span> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // --- Image Lightbox Functions ---
+        function openImageLightbox(url) {
+            document.getElementById('lightboxImage').src = url;
+            document.getElementById('imageLightboxModal').classList.remove('hidden');
+        }
+        function closeImageLightbox() {
+            document.getElementById('imageLightboxModal').classList.add('hidden');
+        }
+
+        // --- Fetch & Render Listings ---
         async function fetchMarketplaceListings() {
             const gridContainer = document.getElementById('listingsGrid');
-            let query = supabaseClient.from('marketplace').select('*').order('created_at', { ascending: false });
+            const sortVal = document.getElementById('sortOption').value;
+
+            let query = supabaseClient.from('marketplace').select('*');
             
+            if (sortVal === 'price_asc') {
+                query = query.order('price', { ascending: true });
+            } else if (sortVal === 'price_desc') {
+                query = query.order('price', { ascending: false });
+            } else {
+                query = query.order('created_at', { ascending: false });
+            }
+
             if (activeFilter !== 'all') {
                 query = query.eq('platform', activeFilter);
             }
@@ -126,15 +188,36 @@
             const { data, error } = await query;
 
             if (error) {
+                showToast("Database error: " + error.message, "error");
                 gridContainer.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center col-span-full">Database Sync Error: ${error.message}</div>`;
                 return;
             }
+
+            rawListingsData = data || [];
+            renderGrid(rawListingsData);
+        }
+
+        function handleSearch() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            if (!searchTerm) {
+                renderGrid(rawListingsData);
+                return;
+            }
+            const filtered = rawListingsData.filter(item => 
+                item.title.toLowerCase().includes(searchTerm) || 
+                item.platform.toLowerCase().includes(searchTerm)
+            );
+            renderGrid(filtered);
+        }
+
+        function renderGrid(data) {
+            const gridContainer = document.getElementById('listingsGrid');
 
             if (!data || data.length === 0) {
                 gridContainer.innerHTML = `
                     <div class="text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl col-span-full px-4">
                         <p class="text-sm font-semibold text-gray-300">No listings available</p>
-                        <p class="text-xs text-gray-500 mt-1">Be the first person to advertise an account for sale right now!</p>
+                        <p class="text-xs text-gray-500 mt-1">Try adjusting your filters or be the first person to post an ad!</p>
                     </div>`;
                 return;
             }
@@ -148,36 +231,34 @@
                 if(item.platform === 'Free Fire') badgeColor = "bg-orange-500/10 text-orange-400 border border-orange-500/20";
                 if(item.platform === 'YouTube') badgeColor = "bg-red-500/10 text-red-400 border border-red-500/20";
 
-                // Fallback picture card placeholder if image link missing
                 const displayImage = item.image_url ? item.image_url : 'https://images.unsplash.com/photo-1612287230202-1bf1d85d1bdf?w=500&auto=format&fit=crop&q=60';
 
                 const card = document.createElement('div');
                 card.className = "bg-gray-800 border border-gray-700/70 rounded-2xl overflow-hidden flex flex-col justify-between shadow-md hover:border-gray-600 transition";
                 card.innerHTML = `
-                    <!-- Account visual display slot -->
-                    <div class="h-44 w-full bg-gray-950 relative overflow-hidden border-b border-gray-700/50">
-                        <img src="${displayImage}" alt="Proof" class="w-full h-full object-cover">
+                    <div class="h-44 w-full bg-gray-950 relative overflow-hidden border-b border-gray-700/50 group cursor-pointer" onclick="openImageLightbox('${displayImage}')">
+                        <img src="${displayImage}" alt="Proof" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                         <span class="absolute top-3 left-3 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${badgeColor}">${item.platform}</span>
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-xs font-bold text-white">🔍 Click to Expand</div>
                     </div>
 
                     <div class="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
                         <div>
                             <div class="flex justify-between items-center mb-1">
                                 <span class="text-xs text-gray-500 font-mono">${new Date(item.created_at).toLocaleDateString()}</span>
-                                <span class="text-sm font-extrabold text-green-400">₦${item.price.toLocaleString()}</span>
+                                <span class="text-sm font-extrabold text-green-400">₦${parseFloat(item.price).toLocaleString()}</span>
                             </div>
                             <h4 class="text-sm font-bold text-white leading-snug break-words">${item.title}</h4>
                             <p class="text-[10px] text-gray-400 mt-1 font-mono break-all">Seller: ${item.seller_email}</p>
                         </div>
 
                         <div class="pt-3 border-t border-gray-700/50 space-y-2">
-                            <!-- UPGRADED Action: Trigger WhatsApp dispatch and EmailJS directly -->
                             <button onclick="contactSeller('${item.contact_handle}', '${item.seller_email}', '${item.platform}', '${item.price}', \`${item.title.replace(/'/g, "\\'")}\`)" 
                                class="w-full bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-xl font-bold text-xs transition flex justify-center items-center gap-1.5 shadow-sm">
                                💬 Contact Seller Now
                             </button>
                             <a href="create.html?seller=${encodeURIComponent(item.seller_email)}&amount=${item.price}&type=${encodeURIComponent(item.platform)}" 
-                               class="w-full block bg-gray-900 border border-gray-700 hover:bg-yellow-500 hover:text-gray-950 text-gray-300 text-center py-2 rounded-xl font-bold text-xs transition">
+                               class="w-full block bg-gray-900 border border-gray-700 hover:bg-yellow-500 hover:text-gray-950 text-gray-300 text-center py-2 rounded-xl font-bold text-xs transition text-center">
                                🔒 Deal via Escrow Room
                             </a>
                         </div>
@@ -190,8 +271,6 @@
         async function handleCreateListing(e) {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.innerText = "Uploading Asset...";
             
             const platform = document.getElementById('assetPlatform').value;
             const title = document.getElementById('assetTitle').value;
@@ -200,21 +279,28 @@
             const email = document.getElementById('sellerEmail').value;
             const imageFile = document.getElementById('assetImage').files[0];
 
+            // Validation: Max File Size 5MB
+            if (imageFile && imageFile.size > 5 * 1024 * 1024) {
+                showToast("Image size must be less than 5MB", "error");
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Uploading Asset...";
+
             let imageUrl = null;
 
-            // 1. Image upload processing step to Supabase Storage Bucket
             if (imageFile) {
                 const fileExt = imageFile.name.split('.').pop();
                 const fileName = `${Math.random()}.${fileExt}`;
                 const filePath = `listings/${fileName}`;
 
-                // Ensure a bucket named 'account-proofs' exists in your Supabase dashboard and is set to public
                 const { error: uploadError } = await supabaseClient.storage
                     .from('account-proofs')
                     .upload(filePath, imageFile);
 
                 if (uploadError) {
-                    alert("Storage upload problem: " + uploadError.message);
+                    showToast("Storage error: " + uploadError.message, "error");
                     submitBtn.disabled = false;
                     submitBtn.innerText = "Post Advertisement";
                     return;
@@ -227,7 +313,6 @@
                 imageUrl = publicUrlData.publicUrl;
             }
 
-            // 2. Insert record row including structural image link to Database Table
             const { error } = await supabaseClient
                 .from('marketplace')
                 .insert([{ 
@@ -243,50 +328,45 @@
             submitBtn.innerText = "Post Advertisement";
 
             if (error) {
-                alert("Error posting ad: " + error.message);
+                showToast("Error posting ad: " + error.message, "error");
                 return;
             }
 
+            showToast("Listing published successfully!", "success");
             document.getElementById('listingForm').reset();
             closeNewListingModal();
             fetchMarketplaceListings();
         }
 
-        // NEW LOGIC ENGINE: Handle multi-channel notifications (WhatsApp link + Automatic EmailJS dispatch)
         async function contactSeller(phone, email, platform, price, title) {
             const formattedPrice = parseFloat(price).toLocaleString();
-            
-            // Construct crisp text for cross-platform dispatch messages
             const textMsg = `Hello! I saw your listing on Tradescrow. I am highly interested in buying your ${platform} Account ("${title}") listed for ₦${formattedPrice}. Let's discuss details and open our secure escrow trade room!`;
             
-            // Channel 1: Automatic silent client email push alert utilizing EmailJS
             try {
-                // Ensure to configure your Template variables to take: to_email, asset_type, asset_title, asset_price
                 await emailjs.send("service_ld1knjm", "template_9mj8u8c", {
                     to_email: email,
                     asset_type: platform,
                     asset_title: title,
                     asset_price: formattedPrice
                 });
-                console.log("Email dispatch successfully cleared to: " + email);
+                showToast("Notification email sent to seller!", "success");
             } catch (err) {
                 console.error("Automated background email transmission skipped/failed: ", err);
             }
 
-            // Channel 2: Immediate WhatsApp Deep Link Redirection
             const cleanPhone = phone.replace(/\+/g, '').trim(); 
             const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(textMsg)}`;
             window.open(whatsappUrl, '_blank');
         }
 
-        function filterPlatform(platform) {
+        function filterPlatform(platform, btnElement) {
             activeFilter = platform;
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('bg-yellow-500', 'text-gray-950', 'font-bold');
                 btn.classList.add('bg-gray-800', 'text-gray-300', 'font-medium', 'border', 'border-gray-700');
             });
-            event.target.classList.remove('bg-gray-800', 'text-gray-300', 'font-medium', 'border', 'border-gray-700');
-            event.target.classList.add('bg-yellow-500', 'text-gray-950', 'font-bold');
+            btnElement.classList.remove('bg-gray-800', 'text-gray-300', 'font-medium', 'border', 'border-gray-700');
+            btnElement.classList.add('bg-yellow-500', 'text-gray-950', 'font-bold');
             fetchMarketplaceListings();
         }
 
