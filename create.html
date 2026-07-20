@@ -6,13 +6,26 @@
     <title>Tradescrow - Initialize Deal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- EmailJS SDK Initialization -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            emailjs.init("2P9_CTCv2Or7YHx3Z");
+        })();
+    </script>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen pb-12">
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
     <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <h1 class="text-xl font-bold text-yellow-500 tracking-wide">🎮 Tradescrow</h1>
-            <span class="text-xs bg-yellow-500/10 text-yellow-400 font-bold px-2.5 py-1 rounded-full border border-yellow-500/20">P2P Escrow Engine</span>
+            <div class="flex items-center gap-3">
+                <a href="marketplace.html" class="text-xs text-gray-400 hover:text-white font-medium bg-gray-900/50 border border-gray-700 px-3 py-1.5 rounded-xl transition">🛒 Marketplace</a>
+                <span class="text-xs bg-yellow-500/10 text-yellow-400 font-bold px-2.5 py-1 rounded-full border border-yellow-500/20">P2P Escrow Engine</span>
+            </div>
         </div>
     </nav>
 
@@ -32,6 +45,9 @@
                         <option value="Instagram">Instagram Profile</option>
                         <option value="TikTok">TikTok Account</option>
                         <option value="Facebook">Facebook Page/Profile</option>
+                        <option value="Free Fire">Free Fire ID</option>
+                        <option value="YouTube">YouTube Channel</option>
+                        <option value="Other">Other Asset</option>
                     </select>
                 </div>
 
@@ -109,17 +125,40 @@
         const roleSelect = document.getElementById('userRole');
         const sellerBankSection = document.getElementById('sellerBankSection');
 
-        // 1. Fee Calculations
-        amountInput.addEventListener('input', () => {
+        // Custom Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+            
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-xl transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto flex items-center gap-2`;
+            toast.innerHTML = `<span>${type === 'success' ? '✓' : '⚠️'}</span> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Calculate Fee & Total Amount
+        function updateCalculations() {
             const amount = parseFloat(amountInput.value) || 0;
             const escrowFee = amount * 0.02; 
             const totalAmount = amount + escrowFee;
 
             feeDisplay.innerText = `₦${escrowFee.toLocaleString()}`;
             totalDisplay.innerText = `₦${totalAmount.toLocaleString()}`;
-        });
+        }
 
-        // 2. Role Toggle UI Visibility Logic
+        amountInput.addEventListener('input', updateCalculations);
+
+        // Role Toggle UI Visibility Logic
         roleSelect.addEventListener('change', () => {
             if (roleSelect.value === 'buyer') {
                 sellerBankSection.classList.add('hidden');
@@ -128,12 +167,42 @@
             }
         });
 
-        // 3. Initial Boot State Check Execution
+        // Parse URL Parameters (Auto-fill marketplace data)
+        function checkUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sellerParam = urlParams.get('seller');
+            const amountParam = urlParams.get('amount');
+            const typeParam = urlParams.get('type');
+
+            if (sellerParam) {
+                document.getElementById('peerContact').value = sellerParam;
+                document.getElementById('userRole').value = 'buyer';
+                sellerBankSection.classList.add('hidden');
+            }
+
+            if (amountParam) {
+                amountInput.value = amountParam;
+                updateCalculations();
+            }
+
+            if (typeParam) {
+                const assetSelect = document.getElementById('assetType');
+                const matchingOption = Array.from(assetSelect.options).find(opt => opt.value.toLowerCase() === typeParam.toLowerCase());
+                if (matchingOption) {
+                    assetSelect.value = matchingOption.value;
+                } else {
+                    assetSelect.value = 'Other';
+                }
+            }
+        }
+
+        // Initial Boot Setup
         if (roleSelect.value === 'buyer') {
             sellerBankSection.classList.add('hidden');
         }
+        checkUrlParameters();
 
-        // 4. Form Submission Database Routing Handling
+        // Form Submission Database Routing Handling
         async function handleFormSubmit(e) {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
@@ -174,7 +243,7 @@
                 .select();
 
             if (error) {
-                alert('Database Error: ' + error.message);
+                showToast('Database Error: ' + error.message, 'error');
                 btn.disabled = false;
                 btn.innerText = 'Initialize Escrow Deal';
                 return;
@@ -182,6 +251,19 @@
 
             const newTradeId = data[0].id;
             localStorage.setItem('tradescrow_user_email', userEmail.trim().toLowerCase());
+
+            // Automated Email Notification to Partner
+            try {
+                await emailjs.send("service_ld1knjm", "template_9mj8u8c", {
+                    to_email: peerEmail,
+                    asset_type: asset,
+                    asset_title: `New Trade Room Invite (#${newTradeId.substring(0, 8)})`,
+                    asset_price: amount.toLocaleString()
+                });
+            } catch (emailErr) {
+                console.error("Invite email background transmission skipped/failed: ", emailErr);
+            }
+
             window.location.href = `room.html?id=${newTradeId}`;
         }
     </script>
