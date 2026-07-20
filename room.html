@@ -7,12 +7,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://js.paystack.co/v1/inline.js"></script>
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            emailjs.init("2P9_CTCv2Or7YHx3Z");
+        })();
+    </script>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen pb-12">
 
-    <nav class="bg-gray-800 border-b border-gray-700 p-4">
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+    <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-40">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold text-yellow-500">🎮 Tradescrow Room</h1>
+            <div class="flex items-center gap-3">
+                <a href="dashboard.html" class="text-xs text-gray-400 hover:text-white font-medium bg-gray-900/50 border border-gray-700 px-3 py-1.5 rounded-xl transition">Dashboard</a>
+                <h1 class="text-xl font-bold text-yellow-500">🎮 Tradescrow Room</h1>
+            </div>
             <span id="liveBadge" class="text-xs bg-gray-700 text-gray-400 font-bold px-2.5 py-1 rounded-full border border-gray-600 animate-pulse">Connecting...</span>
         </div>
     </nav>
@@ -95,9 +108,30 @@
         let timerInterval = null; 
 
         if (!tradeId) {
-            alert("No trade ID found in URL link string!");
-            window.location.href = 'index.html';
-        } 
+            showToast("No trade ID found in URL link string!", "error");
+            setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+        }
+
+        // Custom Toast Notifications
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+            
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-xl transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto flex items-center gap-2`;
+            toast.innerHTML = `<span>${type === 'success' ? '✓' : '⚠️'}</span> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
 
         async function loadChatHistory() {
             const windowContainer = document.getElementById('chatMessageWindow');
@@ -230,7 +264,6 @@
                 .subscribe();
         }
 
-        // UPDATED: Added native evaluation loops matching 'released' and 'settled_closed'
         function renderUI(trade) {
             document.getElementById('lblAsset').innerText = trade.asset_type;
             document.getElementById('lblAmount').innerText = '₦' + trade.amount.toLocaleString();
@@ -270,8 +303,7 @@
                 startInspectionCountdown(targetTimestamp);
 
                 if (isBuyer) {
-                    // Check if seller added details yet to handle button availability layout states
-                    const detailsAdded = trade.seller_account_number && trade.seller_bank_name;
+                    const detailsAdded = (trade.seller_account_number && (trade.seller_bank_name || trade.seller_bank_code));
                     
                     actions.innerHTML = `
                         <div class="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-xs text-yellow-400 mb-2 font-medium">
@@ -282,7 +314,7 @@
                             <button onclick="updateTradeStatus('disputed')" class="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold py-3 px-4 rounded-xl border border-red-500/20 transition text-sm">Raise Dispute</button>
                         </div>`;
                 } else if (isSeller) {
-                    const dynamicBankLabel = trade.seller_account_number ? `Saved Payout Account: ${trade.seller_bank_name} (${trade.seller_account_number})` : 'Configure Settlement Target Account';
+                    const dynamicBankLabel = trade.seller_account_number ? `Saved Payout Account: ${trade.seller_bank_name || 'Bank'} (${trade.seller_account_number})` : 'Configure Settlement Target Account';
 
                     actions.innerHTML = `
                         <div class="bg-green-600/10 border border-green-500/20 rounded-xl p-4 text-center text-xs text-green-400 font-medium mb-3">
@@ -290,7 +322,6 @@
                             <span class="text-gray-400 block mt-1">Drop the account credentials securely in the chat window below.</span>
                         </div>
                         
-                        <!-- SELLER SETTLEMENT COLLECTION PANEL -->
                         <div class="bg-gray-950 border border-gray-800 rounded-xl p-4 space-y-3">
                             <h4 class="text-xs font-bold text-gray-300 flex items-center justify-between">
                                 <span>🏦 ${dynamicBankLabel}</span>
@@ -308,36 +339,35 @@
                     actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Deal funded. Inspection phase active.</div>`;
                 }
             } 
-            // FIXED: Treats both active release and admin closed statuses as a success loop state
             else if (trade.status === 'released' || trade.status === 'settled_closed') {
                 setTimelineToSettled();
                 timerContainer.classList.add('hidden'); 
                 actions.innerHTML = `
                     <div class="bg-green-500/10 border border-green-500/20 text-green-400 font-semibold p-4 rounded-xl text-center text-sm">
                         🔒 Transaction fully verified and payouts settled.
-                        ${trade.seller_bank_name ? `<p class="text-[11px] text-gray-400 font-mono mt-1">Routed to: ${trade.seller_bank_name} (${trade.seller_account_number})</p>` : ''}
+                        ${trade.seller_bank_name || trade.seller_bank_code ? `<p class="text-[11px] text-gray-400 font-mono mt-1">Routed to: ${trade.seller_bank_name || 'Registered Bank'} (${trade.seller_account_number})</p>` : ''}
                     </div>`;
             }
-            else if (trade.status === 'disputed') {
+          else if (trade.status === 'disputed') {
                 setTimelineToDisputed();
                 timerContainer.classList.add('hidden'); 
                 actions.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 font-semibold p-4 rounded-xl text-center text-sm">🛑 Hold Order Placed. System Admin reviewing submitted room chat history logs.</div>`;
             }
         }
 
-        // NEW FEATURE: Added custom logic to save details and push them to systemic messages room chat instantly
+        // Fixed field typo (`seller_account_name`)
         async function submitBankDetails() {
             const bankName = document.getElementById('txtSellerBank').value.trim();
             const accountNumber = document.getElementById('txtSellerNumber').value.trim();
             const accountName = document.getElementById('txtSellerName').value.trim();
 
             if (!bankName || !accountName) {
-                alert("Please fill out both Bank Name and Account Holder Name completely.");
+                showToast("Please fill out both Bank Name and Account Holder Name completely.", "error");
                 return;
             }
 
             if (accountNumber.length !== 10 || isNaN(accountNumber)) {
-                alert("Please input a valid 10-digit Nigerian bank account number!");
+                showToast("Please input a valid 10-digit Nigerian bank account number!", "error");
                 return;
             }
 
@@ -351,11 +381,10 @@
                 .eq('id', tradeId);
 
             if (tradeError) {
-                alert("Failed to record details: " + tradeError.message);
+                showToast("Failed to record details: " + tradeError.message, "error");
                 return;
             }
 
-            // Automate chat message payload broadcast 
             const systemMessageText = `📢 Seller updated payout destination! Account details set to: ${bankName} (${accountNumber}) under the name "${accountName}". Escrow routing ready for verification.`;
             
             await supabaseClient
@@ -366,7 +395,7 @@
                     message_text: systemMessageText 
                 }]);
 
-            alert("Settlement bank details assigned successfully and logged to chat room!");
+            showToast("Settlement bank details assigned successfully!", "success");
         }
 
         function startInspectionCountdown(createdAtTimestamp) {
@@ -429,7 +458,7 @@
                     updateTradeStatus('paid');
                 },
                 onClose: function() {
-                    alert('Transaction window closed before deposition was complete.');
+                    showToast('Transaction window closed before deposition was complete.', 'error');
                 }
             });
             handler.openIframe();
@@ -442,13 +471,26 @@
                     .update({ status: newStatus })
                     .eq('id', tradeId);
                 if (error) throw error;
-                window.location.reload();
+
+                // Send email notification on payment confirmation
+                if (newStatus === 'paid') {
+                    try {
+                        await emailjs.send("service_ld1knjm", "template_9mj8u8c", {
+                            to_email: tradeDetails.seller_email,
+                            asset_type: tradeDetails.asset_type,
+                            asset_title: `Payment Deposited (#${tradeId.substring(0, 8)})`,
+                            asset_price: tradeDetails.amount.toLocaleString()
+                        });
+                    } catch (e) { console.error("Email notification failed: ", e); }
+                }
+
+                showToast(`Status updated to ${newStatus}`, "success");
+                setTimeout(() => { window.location.reload(); }, 1000);
             } catch (err) {
-                alert("Status sync error: " + err.message);
+                showToast("Status sync error: " + err.message, "error");
             }
         }
 
-        // FIXED/OPTIMIZED: Reads saved data records automatically without prompts
         async function handleReleaseFunds() {
             try {
                 const confirmRelease = confirm("Are you sure you want to release the funds to the seller? This action cannot be undone.");
@@ -464,7 +506,7 @@
                         </span>`;
                 }
 
-                await new Promise(resolve => setTimeout(resolve, 2500));
+                await new Promise(resolve => setTimeout(resolve, 2000));
 
                 const { error } = await supabaseClient
                     .from('trade')
@@ -473,21 +515,30 @@
 
                 if (error) throw error;
 
-                // Send layout feedback confirmation directly to chat records
                 await supabaseClient
                     .from('messages')
                     .insert([{ 
                         trade_id: tradeId, 
                         sender_email: 'System', 
-                        message_text: `📢 Option B Settlement Vault Activated! ₦${tradeDetails.amount.toLocaleString()} cleared for administrator routing to registered target account number.` 
+                        message_text: `📢 Escrow Settlement Vault Activated! ₦${tradeDetails.amount.toLocaleString()} cleared for seller routing.` 
                     }]);
 
-                alert("🚀 Payout routing successful! The transaction has been settled successfully.");
-                window.location.reload();
+                // Notify seller via email
+                try {
+                    await emailjs.send("service_ld1knjm", "template_9mj8u8c", {
+                        to_email: tradeDetails.seller_email,
+                        asset_type: tradeDetails.asset_type,
+                        asset_title: `Funds Released (#${tradeId.substring(0, 8)})`,
+                        asset_price: tradeDetails.amount.toLocaleString()
+                    });
+                } catch (e) { console.error("Email notification failed: ", e); }
+
+                showToast("🚀 Payout routing successful! Deal settled.", "success");
+                setTimeout(() => { window.location.reload(); }, 1500);
 
             } catch (error) {
-                alert("Automated routing failed: " + error.message);
-                window.location.reload();
+                showToast("Automated routing failed: " + error.message, "error");
+                setTimeout(() => { window.location.reload(); }, 1500);
             }
         }
 
@@ -506,7 +557,7 @@
                     shareBtn.classList.add('bg-gray-700/50', 'text-gray-300', 'border-gray-600');
                 }, 2500);
             }).catch(err => {
-                alert("Here is your link: " + currentUrl);
+                showToast("Here is your link: " + currentUrl, "success");
             });
         }
 
