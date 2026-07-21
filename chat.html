@@ -12,10 +12,37 @@
     <!-- Header Navigation -->
     <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold text-yellow-500 tracking-wide">💬 Global Hub Chat</h1>
+            <div class="flex items-center gap-3">
+                <h1 class="text-xl font-bold text-yellow-500 tracking-wide">💬 Global Hub Chat</h1>
+                <button onclick="toggleGameDrawer()" class="text-xs bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-3 py-1 rounded-full font-bold hover:bg-yellow-500/20 transition flex items-center gap-1">
+                    🎮 Mini Game
+                </button>
+            </div>
             <span id="liveBadge" class="text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 px-2.5 py-0.5 rounded-full font-bold">Connecting Pipeline...</span>
         </div>
     </nav>
+
+    <!-- Mini-Game Drawer Section -->
+    <div id="gameDrawer" class="hidden max-w-4xl mx-auto w-full px-4 mt-4">
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-2xl relative">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-bold text-yellow-400 flex items-center gap-2">❌ Tic-Tac-Toe ⭕</h3>
+                <button onclick="resetGame()" class="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold px-2.5 py-1 rounded-lg transition">Restart</button>
+            </div>
+            <div id="gameStatus" class="text-xs text-center text-gray-400 mb-3 font-medium">Player X's turn</div>
+            <div class="grid grid-cols-3 gap-2 max-w-[200px] mx-auto">
+                <button onclick="makeMove(0)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                <button onclick="makeMove(1)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                <button onclick="makeMove(2)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                <button onclick="makeMove(3)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                <button onclick="makeMove(4)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                <button onclick="makeMove(5)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                <button onclick="makeMove(6)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                <button onclick="makeMove(7)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                <button onclick="makeMove(8)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+            </div>
+        </div>
+    </div>
 
     <!-- Internal Routing Tabs Layout -->
     <div class="max-w-4xl mx-auto w-full px-4 mt-4 grid grid-cols-2 gap-2">
@@ -29,14 +56,35 @@
             <p class="text-gray-600 text-xs text-center my-auto">Initializing universal global connection sync streams...</p>
         </div>
 
+        <!-- Image Upload Preview Banner -->
+        <div id="imagePreviewContainer" class="hidden mb-2 p-2 bg-gray-800 border border-gray-700 rounded-xl flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <img id="imagePreview" src="" class="w-12 h-12 object-cover rounded-lg border border-gray-600" />
+                <span class="text-xs text-gray-300 font-medium truncate max-w-[200px]" id="previewFileName">image.png</span>
+            </div>
+            <button type="button" onclick="clearSelectedImage()" class="text-gray-400 hover:text-red-400 text-sm font-bold p-1">✕</button>
+        </div>
+
         <!-- Chat Input Action Form Section -->
-        <form id="globalChatForm" onsubmit="sendGlobalMessage(event)" class="flex gap-2">
-            <input id="globalInput" type="text" required placeholder="Ask a question or find traders safely..." class="flex-1 bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-yellow-500 transition">
-            <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold px-6 rounded-xl text-sm transition">
-                Send
+        <form id="globalChatForm" onsubmit="sendGlobalMessage(event)" class="flex gap-2 items-center">
+            <!-- File Input & Attachment Button -->
+            <label class="cursor-pointer bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl p-3 text-gray-400 hover:text-white transition flex items-center justify-center">
+                📷
+                <input id="imageFileInput" type="file" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
+            </label>
+
+            <input id="globalInput" type="text" placeholder="Ask a question or find traders safely..." class="flex-1 bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-yellow-500 transition">
+            
+            <button id="sendBtn" type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold px-6 py-3 rounded-xl text-sm transition flex items-center gap-2">
+                <span>Send</span>
             </button>
         </form>
     </main>
+
+    <!-- Image Lightbox Modal -->
+    <div id="lightbox" class="hidden fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-pointer" onclick="closeLightbox()">
+        <img id="lightboxImg" src="" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain">
+    </div>
 
     <script>
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
@@ -46,6 +94,58 @@
         const activeUser = localStorage.getItem('tradescrow_user_email');
         if (!activeUser) {
             window.location.href = 'index.html';
+        }
+
+        let selectedImageFile = null;
+
+        // Image Handling
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert("File size exceeds 5MB limit.");
+                return;
+            }
+
+            selectedImageFile = file;
+            document.getElementById('previewFileName').innerText = file.name;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('imagePreview').src = e.target.result;
+                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearSelectedImage() {
+            selectedImageFile = null;
+            document.getElementById('imageFileInput').value = '';
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+        }
+
+        async function uploadImageToSupabase(file) {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+            const filePath = `chat_uploads/${fileName}`;
+
+            const { data, error } = await supabaseClient
+                .storage
+                .from('chat_images')
+                .upload(filePath, file);
+
+            if (error) {
+                console.error('Storage upload error:', error.message);
+                throw error;
+            }
+
+            const { data: publicData } = supabaseClient
+                .storage
+                .from('chat_images')
+                .getPublicUrl(filePath);
+
+            return publicData.publicUrl;
         }
 
         async function loadGlobalHistory() {
@@ -62,7 +162,7 @@
                 return;
             }
 
-            chatBox.innerHTML = ""; // Clear loader
+            chatBox.innerHTML = "";
             if (data && data.length > 0) {
                 data.forEach(msg => renderMessageRow(msg));
             } else {
@@ -78,16 +178,22 @@
             const isMe = msg.sender_email.toLowerCase() === activeUser.toLowerCase();
             const msgBubble = document.createElement('div');
             
-            msgBubble.className = `max-w-[85%] p-3 rounded-xl text-xs flex flex-col space-y-1 ${
+            msgBubble.className = `max-w-[85%] p-3 rounded-xl text-xs flex flex-col space-y-2 ${
                 isMe ? 'bg-yellow-500/10 text-gray-200 ml-auto border border-yellow-500/20' : 'bg-gray-900 border border-gray-800 text-gray-200'
             }`;
+
+            let imageHtml = '';
+            if (msg.image_url) {
+                imageHtml = `<img src="${msg.image_url}" onclick="openLightbox('${msg.image_url}')" class="max-h-52 rounded-lg object-cover cursor-pointer hover:opacity-90 transition border border-gray-700/50 my-1" alt="Chat attachment" />`;
+            }
 
             msgBubble.innerHTML = `
                 <div class="flex justify-between items-center gap-6 font-mono text-[10px] text-gray-500">
                     <span class="font-bold text-gray-400 break-all">${msg.sender_email}</span>
                     <span>${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
-                <p class="font-sans leading-relaxed break-all">${msg.message_text}</p>
+                ${imageHtml}
+                ${msg.message_text ? `<p class="font-sans leading-relaxed break-all">${msg.message_text}</p>` : ''}
             `;
             chatBox.appendChild(msgBubble);
             chatBox.scrollTop = chatBox.scrollHeight;
@@ -96,49 +202,148 @@
         async function sendGlobalMessage(e) {
             e.preventDefault();
             const input = document.getElementById('globalInput');
+            const sendBtn = document.getElementById('sendBtn');
             const text = input.value.trim();
-            if(!text) return;
+            
+            if (!text && !selectedImageFile) return;
 
-            input.value = ""; // Instant UX clear
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = `<span class="animate-spin text-xs">⏳</span>`;
 
-            await supabaseClient.from('global_messages').insert([{
-                sender_email: activeUser,
-                message_text: text
-            }]);
+            let imageUrl = null;
+
+            try {
+                if (selectedImageFile) {
+                    imageUrl = await uploadImageToSupabase(selectedImageFile);
+                }
+
+                input.value = "";
+                clearSelectedImage();
+
+                await supabaseClient.from('global_messages').insert([{
+                    sender_email: activeUser,
+                    message_text: text || '',
+                    image_url: imageUrl
+                }]);
+            } catch (err) {
+                alert("Failed to send message: " + err.message);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = `<span>Send</span>`;
+            }
         }
 
         function listenToRealtimeChat() {
-    const liveBadge = document.getElementById('liveBadge');
-    liveBadge.innerText = "Connecting...";
+            const liveBadge = document.getElementById('liveBadge');
+            liveBadge.innerText = "Connecting...";
 
-    // Explicitly target the table insertion stream cleanly
-    const chatChannel = supabaseClient
-        .channel('any-name-global-stream')
-        .on(
-            'postgres_changes', 
-            { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'global_messages' // 💡 Double check if your table name has an "s" at the end!
-            }, 
-            (payload) => {
-                console.log('⚡ New Global Message Broadcast Received:', payload.new);
-                renderMessageRow(payload.new);
+            const chatChannel = supabaseClient
+                .channel('any-name-global-stream')
+                .on(
+                    'postgres_changes', 
+                    { 
+                        event: 'INSERT', 
+                        schema: 'public', 
+                        table: 'global_messages'
+                    }, 
+                    (payload) => {
+                        renderMessageRow(payload.new);
+                    }
+                )
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        liveBadge.className = "text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 px-2.5 py-0.5 rounded-full font-bold";
+                        liveBadge.innerText = "● Hub Connected";
+                    } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                        liveBadge.className = "text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-0.5 rounded-full font-bold";
+                        liveBadge.innerText = "Disconnected";
+                    }
+                });
+        }
+
+        // Lightbox Functions
+        function openLightbox(url) {
+            document.getElementById('lightboxImg').src = url;
+            document.getElementById('lightbox').classList.remove('hidden');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.add('hidden');
+        }
+
+        // Mini Game Logic (Tic-Tac-Toe)
+        let gameState = ["", "", "", "", "", "", "", "", ""];
+        let currentPlayer = "X";
+        let gameActive = true;
+
+        function toggleGameDrawer() {
+            document.getElementById('gameDrawer').classList.toggle('hidden');
+        }
+
+        function makeMove(index) {
+            if (gameState[index] !== "" || !gameActive) return;
+
+            gameState[index] = currentPlayer;
+            const cells = document.querySelectorAll('.game-cell');
+            cells[index].innerText = currentPlayer;
+            cells[index].classList.add(currentPlayer === 'X' ? 'text-yellow-400' : 'text-blue-400');
+
+            checkGameResult();
+        }
+
+        function checkGameResult() {
+            const winPatterns = [
+                [0,1,2], [3,4,5], [6,7,8],
+                [0,3,6], [1,4,7], [2,5,8],
+                [0,4,8], [2,4,6]
+            ];
+
+            let won = false;
+            for (let condition of winPatterns) {
+                let a = gameState[condition[0]];
+                let b = gameState[condition[1]];
+                let c = gameState[condition[2]];
+                if (a === '' || b === '' || c === '') continue;
+                if (a === b && b === c) {
+                    won = true;
+                    break;
+                }
             }
-        )
-        .subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-                liveBadge.className = "text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 px-2.5 py-0.5 rounded-full font-bold";
-                liveBadge.innerText = "● Hub Connected";
-            } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-                liveBadge.className = "text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-0.5 rounded-full font-bold";
-                liveBadge.innerText = "Disconnected";
+
+            if (won) {
+                document.getElementById('gameStatus').innerText = `🎉 Player ${currentPlayer} Wins!`;
+                document.getElementById('gameStatus').className = "text-xs text-center text-green-400 font-bold mb-3";
+                gameActive = false;
+                return;
             }
-        });
-}
-// Initialize execution sequencing run
+
+            if (!gameState.includes("")) {
+                document.getElementById('gameStatus').innerText = "🤝 Game Draw!";
+                document.getElementById('gameStatus').className = "text-xs text-center text-yellow-400 font-bold mb-3";
+                gameActive = false;
+                return;
+            }
+
+            currentPlayer = currentPlayer === "X" ? "O" : "X";
+            document.getElementById('gameStatus').innerText = `Player ${currentPlayer}'s turn`;
+        }
+
+        function resetGame() {
+            gameState = ["", "", "", "", "", "", "", "", ""];
+            currentPlayer = "X";
+            gameActive = true;
+            document.getElementById('gameStatus').innerText = "Player X's turn";
+            document.getElementById('gameStatus').className = "text-xs text-center text-gray-400 mb-3 font-medium";
+            document.querySelectorAll('.game-cell').forEach(cell => {
+                cell.innerText = "";
+                cell.className = "game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition";
+            });
+        }
+
+        // Initialize execution sequencing run
         loadGlobalHistory();
         listenToRealtimeChat();
     </script>
 </body>
 </html>
+
