@@ -12,6 +12,11 @@
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+
+    <style>
+        .highlight-square { box-shadow: inset 0 0 3px 3px rgba(234, 179, 8, 0.7); }
+        .highlight-hint { background: rgba(234, 179, 8, 0.3) !important; }
+    </style>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col">
 
@@ -21,46 +26,77 @@
             <div class="flex items-center gap-3">
                 <h1 class="text-xl font-bold text-yellow-500 tracking-wide">💬 Global Hub Chat</h1>
                 <button onclick="toggleGameDrawer()" class="text-xs bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-3 py-1 rounded-full font-bold hover:bg-yellow-500/20 transition flex items-center gap-1">
-                    🎮 Mini Games
+                    🎮 P2P Mini Games
                 </button>
             </div>
             <span id="liveBadge" class="text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 px-2.5 py-0.5 rounded-full font-bold">Connecting Pipeline...</span>
         </div>
     </nav>
 
-    <!-- Mini-Game Drawer Section -->
+    <!-- P2P Mini-Game Drawer Section -->
     <div id="gameDrawer" class="hidden max-w-4xl mx-auto w-full px-4 mt-4">
         <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-2xl relative">
             
-            <!-- Game Selector Tabs -->
-            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
-                <div class="flex gap-2">
-                    <button id="tabTicTacToe" onclick="switchGame('tictactoe')" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-yellow-500 text-gray-950 transition">❌ Tic-Tac-Toe</button>
-                    <button id="tabChess" onclick="switchGame('chess')" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-700 text-gray-300 hover:text-white transition">♟️ Chess</button>
+            <!-- Game Controls / Lobby Bar -->
+            <div class="flex flex-wrap justify-between items-center gap-2 mb-4 border-b border-gray-700 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-yellow-400">Game Lobby:</span>
+                    <select id="gameTypeSelect" class="bg-gray-950 border border-gray-700 text-xs rounded-lg px-2.5 py-1 text-gray-200">
+                        <option value="tictactoe">❌ Tic-Tac-Toe</option>
+                        <option value="chess">♟️ Chess</option>
+                    </select>
+                    <button onclick="createNewGameSession()" class="text-xs bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold px-3 py-1 rounded-lg transition">
+                        + Challenge Player
+                    </button>
                 </div>
-                <button onclick="resetCurrentGame()" class="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold px-2.5 py-1 rounded-lg transition">Restart Game</button>
+                <button onclick="leaveCurrentGame()" id="leaveGameBtn" class="hidden text-xs bg-red-500/20 text-red-400 border border-red-500/30 font-semibold px-2.5 py-1 rounded-lg hover:bg-red-500/30 transition">
+                    Leave Game
+                </button>
             </div>
 
-            <!-- TIC-TAC-TOE VIEW -->
-            <div id="tictactoeView">
-                <div id="gameStatus" class="text-xs text-center text-gray-400 mb-3 font-medium">Player X's turn</div>
-                <div class="grid grid-cols-3 gap-2 max-w-[200px] mx-auto">
-                    <button onclick="makeMove(0)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
-                    <button onclick="makeMove(1)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
-                    <button onclick="makeMove(2)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
-                    <button onclick="makeMove(3)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
-                    <button onclick="makeMove(4)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
-                    <button onclick="makeMove(5)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
-                    <button onclick="makeMove(6)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
-                    <button onclick="makeMove(7)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
-                    <button onclick="makeMove(8)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+            <!-- Open Invites / Active Session Cards -->
+            <div id="gameLobbySection" class="space-y-2 mb-4">
+                <h4 class="text-xs font-semibold text-gray-400">Open Challenges & Active Games:</h4>
+                <div id="lobbyGamesList" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <p class="text-gray-500 italic col-span-2">Loading game lobby...</p>
                 </div>
             </div>
 
-            <!-- CHESS VIEW -->
-            <div id="chessView" class="hidden flex flex-col items-center">
-                <div id="chessStatus" class="text-xs text-center text-yellow-400 mb-3 font-semibold">White to move</div>
-                <div id="chessBoard" class="w-[280px] sm:w-[320px] rounded-lg overflow-hidden border-2 border-gray-700"></div>
+            <!-- ACTIVE GAME ARENA -->
+            <div id="gameArena" class="hidden border-t border-gray-700 pt-4">
+                <div class="flex justify-between items-center text-xs mb-3 bg-gray-950 p-2.5 rounded-xl border border-gray-800">
+                    <div>
+                        <span class="text-gray-400">Player 1:</span> 
+                        <span id="arenaP1" class="font-bold text-yellow-400">...</span>
+                    </div>
+                    <span class="text-gray-600 font-bold">VS</span>
+                    <div>
+                        <span class="text-gray-400">Player 2:</span> 
+                        <span id="arenaP2" class="font-bold text-yellow-400">Waiting for opponent...</span>
+                    </div>
+                </div>
+
+                <div id="gameTurnStatus" class="text-xs text-center font-bold text-yellow-400 mb-3">Connecting game session...</div>
+
+                <!-- TIC-TAC-TOE VIEW -->
+                <div id="tictactoeView" class="hidden">
+                    <div class="grid grid-cols-3 gap-2 max-w-[200px] mx-auto">
+                        <button onclick="makeTicTacToeMove(0)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                        <button onclick="makeTicTacToeMove(1)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                        <button onclick="makeTicTacToeMove(2)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                        <button onclick="makeTicTacToeMove(3)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                        <button onclick="makeTicTacToeMove(4)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                        <button onclick="makeTicTacToeMove(5)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                        <button onclick="makeTicTacToeMove(6)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                        <button onclick="makeTicTacToeMove(7)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                        <button onclick="makeTicTacToeMove(8)" class="game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition"></button>
+                    </div>
+                </div>
+
+                <!-- CHESS VIEW -->
+                <div id="chessView" class="hidden flex flex-col items-center">
+                    <div id="chessBoard" class="w-[280px] sm:w-[320px] rounded-lg overflow-hidden border-2 border-gray-700"></div>
+                </div>
             </div>
 
         </div>
@@ -89,7 +125,6 @@
 
         <!-- Chat Input Action Form Section -->
         <form id="globalChatForm" onsubmit="sendGlobalMessage(event)" class="flex gap-2 items-center">
-            <!-- File Input & Attachment Button -->
             <label class="cursor-pointer bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl p-3 text-gray-400 hover:text-white transition flex items-center justify-center">
                 📷
                 <input id="imageFileInput" type="file" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
@@ -124,15 +159,12 @@
         function handleImageSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             if (file.size > 5 * 1024 * 1024) {
                 alert("File size exceeds 5MB limit.");
                 return;
             }
-
             selectedImageFile = file;
             document.getElementById('previewFileName').innerText = file.name;
-            
             const reader = new FileReader();
             reader.onload = function(e) {
                 document.getElementById('imagePreview').src = e.target.result;
@@ -157,10 +189,7 @@
                 .from('chat_images')
                 .upload(filePath, file);
 
-            if (error) {
-                console.error('Storage upload error:', error.message);
-                throw error;
-            }
+            if (error) throw error;
 
             const { data: publicData } = supabaseClient
                 .storage
@@ -172,7 +201,6 @@
 
         async function loadGlobalHistory() {
             const chatBox = document.getElementById('globalChatWindow');
-            
             const { data, error } = await supabaseClient
                 .from('global_messages')
                 .select('*')
@@ -206,7 +234,7 @@
 
             let imageHtml = '';
             if (msg.image_url) {
-                imageHtml = `<img src="${msg.image_url}" onclick="openLightbox('${msg.image_url}')" class="max-h-52 rounded-lg object-cover cursor-pointer hover:opacity-90 transition border border-gray-700/50 my-1" alt="Chat attachment" />`;
+                imageHtml = `<img src="${msg.image_url}" onclick="openLightbox('${msg.image_url}')" class="max-h-52 rounded-lg object-cover cursor-pointer hover:opacity-90 transition border border-gray-700/50 my-1" alt="Attachment" />`;
             }
 
             msgBubble.innerHTML = `
@@ -259,19 +287,11 @@
             const liveBadge = document.getElementById('liveBadge');
             liveBadge.innerText = "Connecting...";
 
-            const chatChannel = supabaseClient
-                .channel('any-name-global-stream')
-                .on(
-                    'postgres_changes', 
-                    { 
-                        event: 'INSERT', 
-                        schema: 'public', 
-                        table: 'global_messages'
-                    }, 
-                    (payload) => {
-                        renderMessageRow(payload.new);
-                    }
-                )
+            supabaseClient
+                .channel('global-stream')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'global_messages' }, (payload) => {
+                    renderMessageRow(payload.new);
+                })
                 .subscribe((status) => {
                     if (status === 'SUBSCRIBED') {
                         liveBadge.className = "text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 px-2.5 py-0.5 rounded-full font-bold";
@@ -283,7 +303,6 @@
                 });
         }
 
-        // Lightbox Functions
         function openLightbox(url) {
             document.getElementById('lightboxImg').src = url;
             document.getElementById('lightbox').classList.remove('hidden');
@@ -293,186 +312,359 @@
             document.getElementById('lightbox').classList.add('hidden');
         }
 
-        // --- MINI GAMES ENGINE ---
-        let currentSelectedGame = 'tictactoe';
+        // ==========================================
+        // --- REALTIME MULTIPLAYER P2P GAME ENGINE ---
+        // ==========================================
+        let currentSession = null;
+        let chessGame = null;
+        let chessBoardInstance = null;
+        let selectedSquare = null;
 
         function toggleGameDrawer() {
             const drawer = document.getElementById('gameDrawer');
             drawer.classList.toggle('hidden');
-            if (!drawer.classList.contains('hidden') && currentSelectedGame === 'chess' && !chessBoardInstance) {
-                initChessBoard();
+            if (!drawer.classList.contains('hidden')) {
+                fetchLobbySessions();
             }
         }
 
-        function switchGame(game) {
-            currentSelectedGame = game;
-            const ttBtn = document.getElementById('tabTicTacToe');
-            const chessBtn = document.getElementById('tabChess');
-            const ttView = document.getElementById('tictactoeView');
-            const chessView = document.getElementById('chessView');
+        async function createNewGameSession() {
+            const gameType = document.getElementById('gameTypeSelect').value;
+            const initialState = gameType === 'tictactoe' 
+                ? ["", "", "", "", "", "", "", "", ""] 
+                : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
-            if (game === 'tictactoe') {
-                ttBtn.className = "text-xs font-bold px-3 py-1.5 rounded-lg bg-yellow-500 text-gray-950 transition";
-                chessBtn.className = "text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-700 text-gray-300 hover:text-white transition";
-                ttView.classList.remove('hidden');
-                chessView.classList.add('hidden');
-            } else {
-                chessBtn.className = "text-xs font-bold px-3 py-1.5 rounded-lg bg-yellow-500 text-gray-950 transition";
-                ttBtn.className = "text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-700 text-gray-300 hover:text-white transition";
-                chessView.classList.remove('hidden');
-                ttView.classList.add('hidden');
+            const { data, error } = await supabaseClient
+                .from('game_sessions')
+                .insert([{
+                    game_type: gameType,
+                    player_1: activeUser,
+                    player_2: null,
+                    current_turn: activeUser,
+                    game_state: initialState,
+                    status: 'waiting'
+                }])
+                .select()
+                .single();
+
+            if (error) {
+                alert("Could not create game: " + error.message);
+                return;
+            }
+
+            // Post invitation announcement to chat
+            await supabaseClient.from('global_messages').insert([{
+                sender_email: '🎮 Game Bot',
+                message_text: `⚔️ ${activeUser} created a new ${gameType.toUpperCase()} challenge! Open Mini Games to join!`
+            }]);
+
+            loadActiveSession(data);
+            fetchLobbySessions();
+        }
+
+        async function fetchLobbySessions() {
+            const lobbyList = document.getElementById('lobbyGamesList');
+            const { data, error } = await supabaseClient
+                .from('game_sessions')
+                .select('*')
+                .neq('status', 'finished')
+                .order('created_at', { ascending: false })
+                .limit(10);
+
+            if (error) {
+                lobbyList.innerHTML = `<p class="text-red-400 italic col-span-2">Error loading lobby</p>`;
+                return;
+            }
+
+            // Check if current user is already in an active/waiting game
+            const myActiveGame = data.find(g => g.player_1 === activeUser || g.player_2 === activeUser);
+            if (myActiveGame && (!currentSession || currentSession.id !== myActiveGame.id)) {
+                loadActiveSession(myActiveGame);
+            }
+
+            if (!data || data.length === 0) {
+                lobbyList.innerHTML = `<p class="text-gray-500 italic col-span-2">No active challenges. Click "+ Challenge Player" above to start one!</p>`;
+                return;
+            }
+
+            lobbyList.innerHTML = "";
+            data.forEach(game => {
+                const isMyGame = game.player_1 === activeUser || game.player_2 === activeUser;
+                const card = document.createElement('div');
+                card.className = "bg-gray-950 p-2.5 rounded-xl border border-gray-800 flex justify-between items-center";
                 
-                if (!chessBoardInstance) {
-                    setTimeout(initChessBoard, 100);
-                }
-            }
+                card.innerHTML = `
+                    <div>
+                        <span class="font-bold text-yellow-500 uppercase text-[10px]">${game.game_type}</span>
+                        <div class="text-[11px] text-gray-300 font-medium truncate max-w-[150px]">By: ${game.player_1}</div>
+                        <span class="text-[9px] text-gray-500">${game.status === 'waiting' ? '⏳ Waiting for opponent' : '⚡ Game in progress'}</span>
+                    </div>
+                    ${isMyGame 
+                        ? `<button onclick="rejoinGame('${game.id}')" class="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-[10px] font-bold px-2.5 py-1 rounded-lg">Play</button>`
+                        : game.status === 'waiting'
+                            ? `<button onclick="joinGameSession('${game.id}')" class="bg-green-500/20 text-green-400 border border-green-500/30 text-[10px] font-bold px-2.5 py-1 rounded-lg hover:bg-green-500/30">Join</button>`
+                            : `<span class="text-[10px] text-gray-600 font-semibold">Full</span>`
+                    }
+                `;
+                lobbyList.appendChild(card);
+            });
         }
 
-        function resetCurrentGame() {
-            if (currentSelectedGame === 'tictactoe') {
-                resetTicTacToe();
+        async function joinGameSession(gameId) {
+            const { data, error } = await supabaseClient
+                .from('game_sessions')
+                .update({ player_2: activeUser, status: 'active' })
+                .eq('id', gameId)
+                .select()
+                .single();
+
+            if (error) {
+                alert("Failed to join game: " + error.message);
+                return;
+            }
+
+            loadActiveSession(data);
+            fetchLobbySessions();
+        }
+
+        async function rejoinGame(gameId) {
+            const { data } = await supabaseClient.from('game_sessions').select('*').eq('id', gameId).single();
+            if (data) loadActiveSession(data);
+        }
+
+        function loadActiveSession(session) {
+            currentSession = session;
+            document.getElementById('gameArena').classList.remove('hidden');
+            document.getElementById('leaveGameBtn').classList.remove('hidden');
+
+            document.getElementById('arenaP1').innerText = session.player_1;
+            document.getElementById('arenaP2').innerText = session.player_2 || 'Waiting for player...';
+
+            if (session.game_type === 'tictactoe') {
+                document.getElementById('tictactoeView').classList.remove('hidden');
+                document.getElementById('chessView').classList.add('hidden');
+                renderTicTacToeBoard(session.game_state);
             } else {
-                resetChess();
+                document.getElementById('chessView').classList.remove('hidden');
+                document.getElementById('tictactoeView').classList.add('hidden');
+                renderChessBoard(session.game_state);
+            }
+
+            updateGameTurnUI();
+            listenToGameUpdates(session.id);
+        }
+
+        function updateGameTurnUI() {
+            const statusEl = document.getElementById('gameTurnStatus');
+            if (currentSession.status === 'waiting') {
+                statusEl.innerText = "⏳ Waiting for an opponent to join...";
+                statusEl.className = "text-xs text-center font-bold text-yellow-400 mb-3 animate-pulse";
+                return;
+            }
+
+            if (currentSession.status === 'finished') {
+                statusEl.innerText = currentSession.winner ? `🎉 Winner: ${currentSession.winner}` : "🤝 Game ended in a Draw!";
+                statusEl.className = "text-xs text-center font-bold text-green-400 mb-3";
+                return;
+            }
+
+            const isMyTurn = currentSession.current_turn.toLowerCase() === activeUser.toLowerCase();
+            statusEl.innerText = isMyTurn ? "👉 IT IS YOUR TURN!" : `⏳ Waiting for ${currentSession.current_turn}...`;
+            statusEl.className = `text-xs text-center font-bold mb-3 ${isMyTurn ? 'text-green-400 animate-bounce' : 'text-gray-400'}`;
+        }
+
+        function listenToGameUpdates(gameId) {
+            supabaseClient
+                .channel(`game-${gameId}`)
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'game_sessions', filter: `id=eq.${gameId}` }, (payload) => {
+                    currentSession = payload.new;
+                    document.getElementById('arenaP2').innerText = currentSession.player_2 || 'Waiting for player...';
+
+                    if (currentSession.game_type === 'tictactoe') {
+                        renderTicTacToeBoard(currentSession.game_state);
+                    } else if (chessGame && chessBoardInstance) {
+                        chessGame.load(currentSession.game_state);
+                        chessBoardInstance.position(currentSession.game_state);
+                    }
+
+                    updateGameTurnUI();
+                })
+                .subscribe();
+        }
+
+        async function leaveCurrentGame() {
+            currentSession = null;
+            document.getElementById('gameArena').classList.add('hidden');
+            document.getElementById('leaveGameBtn').classList.add('hidden');
+            fetchLobbySessions();
+        }
+
+        // --- P2P TIC-TAC-TOE ENGINE ---
+        function renderTicTacToeBoard(boardArray) {
+            const cells = document.querySelectorAll('.game-cell');
+            cells.forEach((cell, idx) => {
+                const val = boardArray[idx] || '';
+                cell.innerText = val;
+                cell.className = `game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold transition ${
+                    val === 'X' ? 'text-yellow-400' : val === 'O' ? 'text-blue-400' : 'text-white hover:bg-gray-900'
+                }`;
+            });
+        }
+
+        async function makeTicTacToeMove(index) {
+            if (!currentSession || currentSession.status !== 'active') return;
+            if (currentSession.current_turn.toLowerCase() !== activeUser.toLowerCase()) {
+                alert("It's not your turn!");
+                return;
+            }
+
+            const board = [...currentSession.game_state];
+            if (board[index] !== "") return;
+
+            const mySymbol = currentSession.player_1.toLowerCase() === activeUser.toLowerCase() ? 'X' : 'O';
+            board[index] = mySymbol;
+
+            const winnerSymbol = checkTicTacToeWinner(board);
+            let nextTurn = currentSession.player_1.toLowerCase() === activeUser.toLowerCase() ? currentSession.player_2 : currentSession.player_1;
+            let newStatus = 'active';
+            let winnerUser = null;
+
+            if (winnerSymbol) {
+                newStatus = 'finished';
+                winnerUser = winnerSymbol === 'Draw' ? null : activeUser;
+            }
+
+            const { data } = await supabaseClient
+                .from('game_sessions')
+                .update({
+                    game_state: board,
+                    current_turn: nextTurn,
+                    status: newStatus,
+                    winner: winnerUser
+                })
+                .eq('id', currentSession.id)
+                .select()
+                .single();
+
+            if (data) {
+                currentSession = data;
+                renderTicTacToeBoard(data.game_state);
+                updateGameTurnUI();
             }
         }
 
-        // 1. Tic-Tac-Toe Logic
-        let gameState = ["", "", "", "", "", "", "", "", ""];
-        let currentPlayer = "X";
-        let gameActive = true;
-
-        function makeMove(index) {
-            if (gameState[index] !== "" || !gameActive) return;
-
-            gameState[index] = currentPlayer;
-            const cells = document.querySelectorAll('.game-cell');
-            cells[index].innerText = currentPlayer;
-            cells[index].classList.add(currentPlayer === 'X' ? 'text-yellow-400' : 'text-blue-400');
-
-            checkGameResult();
+        function checkTicTacToeWinner(board) {
+            const winPatterns = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            for (let [a,b,c] of winPatterns) {
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
+            }
+            if (!board.includes("")) return 'Draw';
+            return null;
         }
 
-        function checkGameResult() {
-            const winPatterns = [
-                [0,1,2], [3,4,5], [6,7,8],
-                [0,3,6], [1,4,7], [2,5,8],
-                [0,4,8], [2,4,6]
-            ];
+        // --- P2P CHESS ENGINE ---
+        function renderChessBoard(fen) {
+            if (!chessGame) chessGame = new Chess();
+            chessGame.load(fen);
 
-            let won = false;
-            for (let condition of winPatterns) {
-                let a = gameState[condition[0]];
-                let b = gameState[condition[1]];
-                let c = gameState[condition[2]];
-                if (a === '' || b === '' || c === '') continue;
-                if (a === b && b === c) {
-                    won = true;
-                    break;
+            if (!chessBoardInstance) {
+                chessBoardInstance = Chessboard('chessBoard', {
+                    draggable: true,
+                    position: fen,
+                    pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+                    onDragStart: (src, piece) => {
+                        if (currentSession.status !== 'active') return false;
+                        if (currentSession.current_turn.toLowerCase() !== activeUser.toLowerCase()) return false;
+                        const isP1 = currentSession.player_1.toLowerCase() === activeUser.toLowerCase();
+                        if ((isP1 && piece.search(/^b/) !== -1) || (!isP1 && piece.search(/^w/) !== -1)) return false;
+                    },
+                    onDrop: (src, target) => {
+                        const move = chessGame.move({ from: src, to: target, promotion: 'q' });
+                        if (move === null) return 'snapback';
+                        syncChessMove(chessGame.fen());
+                    },
+                    onSnapEnd: () => chessBoardInstance.position(chessGame.fen())
+                });
+
+                // Tap-to-move bindings
+                $('#chessBoard').off('click', '.square-55d63').on('click', '.square-55d63', function() {
+                    const square = $(this).attr('data-square');
+                    handleChessSquareTap(square);
+                });
+            } else {
+                chessBoardInstance.position(fen);
+            }
+        }
+
+        function handleChessSquareTap(square) {
+            if (!currentSession || currentSession.status !== 'active') return;
+            if (currentSession.current_turn.toLowerCase() !== activeUser.toLowerCase()) return;
+
+            if (selectedSquare) {
+                const move = chessGame.move({ from: selectedSquare, to: square, promotion: 'q' });
+                if (move) {
+                    chessBoardInstance.position(chessGame.fen());
+                    clearChessHighlights();
+                    selectedSquare = null;
+                    syncChessMove(chessGame.fen());
+                    return;
                 }
             }
 
-            if (won) {
-                document.getElementById('gameStatus').innerText = `🎉 Player ${currentPlayer} Wins!`;
-                document.getElementById('gameStatus').className = "text-xs text-center text-green-400 font-bold mb-3";
-                gameActive = false;
-                return;
-            }
+            const piece = chessGame.get(square);
+            clearChessHighlights();
 
-            if (!gameState.includes("")) {
-                document.getElementById('gameStatus').innerText = "🤝 Game Draw!";
-                document.getElementById('gameStatus').className = "text-xs text-center text-yellow-400 font-bold mb-3";
-                gameActive = false;
-                return;
-            }
+            const isP1 = currentSession.player_1.toLowerCase() === activeUser.toLowerCase();
+            const myColor = isP1 ? 'w' : 'b';
 
-            currentPlayer = currentPlayer === "X" ? "O" : "X";
-            document.getElementById('gameStatus').innerText = `Player ${currentPlayer}'s turn`;
-        }
-
-        function resetTicTacToe() {
-            gameState = ["", "", "", "", "", "", "", "", ""];
-            currentPlayer = "X";
-            gameActive = true;
-            document.getElementById('gameStatus').innerText = "Player X's turn";
-            document.getElementById('gameStatus').className = "text-xs text-center text-gray-400 mb-3 font-medium";
-            document.querySelectorAll('.game-cell').forEach(cell => {
-                cell.innerText = "";
-                cell.className = "game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold text-white hover:bg-gray-900 transition";
-            });
-        }
-
-        // 2. Chess Logic Engine
-        let chessGame = null;
-        let chessBoardInstance = null;
-
-        function initChessBoard() {
-            chessGame = new Chess();
-            
-            const config = {
-                draggable: true,
-                position: 'start',
-                pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
-                onDragStart: onDragStart,
-                onDrop: onDrop,
-                onSnapEnd: onSnapEnd
-            };
-
-            chessBoardInstance = Chessboard('chessBoard', config);
-            updateChessStatus();
-        }
-
-        function onDragStart(source, piece, position, orientation) {
-            if (chessGame.game_over()) return false;
-            if ((chessGame.turn() === 'w' && piece.search(/^b/) !== -1) ||
-                (chessGame.turn() === 'b' && piece.search(/^w/) !== -1)) {
-                return false;
+            if (piece && piece.color === myColor) {
+                selectedSquare = square;
+                $(`#chessBoard .square-${square}`).addClass('highlight-square');
+                const moves = chessGame.moves({ square: square, verbose: true });
+                moves.forEach(m => $(`#chessBoard .square-${m.to}`).addClass('highlight-hint'));
+            } else {
+                selectedSquare = null;
             }
         }
 
-        function onDrop(source, target) {
-            const move = chessGame.move({
-                from: source,
-                to: target,
-                promotion: 'q' // Auto-promote to queen for simplicity
-            });
-
-            if (move === null) return 'snapback';
-            updateChessStatus();
+        function clearChessHighlights() {
+            $('#chessBoard .square-55d63').removeClass('highlight-square highlight-hint');
         }
 
-        function onSnapEnd() {
-            chessBoardInstance.position(chessGame.fen());
-        }
-
-        function updateChessStatus() {
-            let status = '';
-            let moveColor = chessGame.turn() === 'w' ? 'White' : 'Black';
+        async function syncChessMove(newFen) {
+            let nextTurn = currentSession.player_1.toLowerCase() === activeUser.toLowerCase() ? currentSession.player_2 : currentSession.player_1;
+            let newStatus = 'active';
+            let winnerUser = null;
 
             if (chessGame.in_checkmate()) {
-                status = `🎉 Game over, ${moveColor} is in checkmate!`;
+                newStatus = 'finished';
+                winnerUser = activeUser;
             } else if (chessGame.in_draw()) {
-                status = '🤝 Game over, drawn position!';
-            } else {
-                status = `${moveColor} to move`;
-                if (chessGame.in_check()) {
-                    status += `, ⚠️ ${moveColor} is in check!`;
-                }
+                newStatus = 'finished';
             }
 
-            document.getElementById('chessStatus').innerText = status;
-        }
+            const { data } = await supabaseClient
+                .from('game_sessions')
+                .update({
+                    game_state: newFen,
+                    current_turn: nextTurn,
+                    status: newStatus,
+                    winner: winnerUser
+                })
+                .eq('id', currentSession.id)
+                .select()
+                .single();
 
-        function resetChess() {
-            if (chessGame && chessBoardInstance) {
-                chessGame.reset();
-                chessBoardInstance.start();
-                updateChessStatus();
+            if (data) {
+                currentSession = data;
+                updateGameTurnUI();
             }
         }
 
         // Initialize execution sequencing run
         loadGlobalHistory();
         listenToRealtimeChat();
+        fetchLobbySessions();
     </script>
 </body>
 </html>
