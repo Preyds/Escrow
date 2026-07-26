@@ -27,9 +27,6 @@
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
 
     <!-- Randomly Drifting Floating Emoji Background Pattern -->
-    <!-- The negative offsets (-60px) ensure the edges never clip while the pattern is drifting -->
-        <!-- Randomly Drifting Floating Emoji Background Pattern -->
-    <!-- The negative offsets (-60px) ensure the edges never clip while the pattern is drifting -->
     <div class="absolute -top-[60px] -left-[60px] -right-[60px] -bottom-[60px] pointer-events-none opacity-[0.04] select-none z-0 overflow-hidden">
         <svg width="100%" height="100%" class="animate-bg-random" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -46,11 +43,13 @@
         </svg>
     </div>
 
-
     <!-- Main Content Container -->
     <div class="max-w-md w-full bg-gray-800 border border-gray-700 rounded-2xl p-8 shadow-xl z-10">
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-extrabold text-yellow-500 tracking-wide">🎮 Tradescrow</h1>
+            <!-- Tradescrow Logo -->
+            <img src="logo.png" alt="Tradescrow Logo" class="w-20 h-20 mx-auto mb-3 object-contain drop-shadow-md rounded-xl">
+            
+            <h1 class="text-3xl font-extrabold text-yellow-500 tracking-wide">Tradescrow</h1>
             <p class="text-gray-400 text-sm mt-2">Decentralized P2P Account Escrow Portal</p>
         </div>
 
