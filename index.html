@@ -7,6 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
+    <!-- Three.js Library for 3D Interaction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
     <style>
         /* Custom keyframes to simulate continuous, non-linear random floating movement */
         @keyframes driftRandomly {
@@ -19,22 +22,27 @@
         }
 
         .animate-bg-random {
-            /* Smoothly loops the animation indefinitely over 25 seconds */
             animation: driftRandomly 15s ease-in-out infinite;
+        }
+
+        #logo3dCanvas {
+            cursor: grab;
+            touch-action: none;
+        }
+        #logo3dCanvas:active {
+            cursor: grabbing;
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden select-none">
 
     <!-- Randomly Drifting Floating Emoji Background Pattern -->
     <div class="absolute -top-[60px] -left-[60px] -right-[60px] -bottom-[60px] pointer-events-none opacity-[0.04] select-none z-0 overflow-hidden">
         <svg width="100%" height="100%" class="animate-bg-random" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <pattern id="emojiPattern" width="160" height="160" patternUnits="userSpaceOnUse">
-                    <!-- Row 1 -->
                     <text x="20" y="40" font-size="22">🎮</text>
                     <text x="100" y="40" font-size="22">⚽</text>
-                    <!-- Row 2 -->
                     <text x="20" y="120" font-size="22">😁</text>
                     <text x="100" y="120" font-size="22">🤝</text>
                 </pattern>
@@ -45,13 +53,16 @@
 
     <!-- Main Content Container -->
     <div class="max-w-md w-full bg-gray-800 border border-gray-700 rounded-2xl p-8 shadow-xl z-10">
-        <div class="text-center mb-8">
-            <!-- Tradescrow Logo -->
-<img src="logo.png" alt="Tradescrow Logo" class="w-36 h-36 mx-auto mb-2 object-contain drop-shadow-[0_10px_20px_rgba(234,179,8,0.3)] filter brightness-110 contrast-125 transition-all duration-300 ease-out hover:scale-110 hover:-translate-y-1 hover:drop-shadow-[0_15px_30px_rgba(234,179,8,0.6)]">
+        <div class="text-center mb-6">
             
+            <!-- 3D Interactive Canvas Container -->
+            <div class="relative w-44 h-44 mx-auto flex items-center justify-center">
+                <canvas id="logo3dCanvas" class="w-full h-full drop-shadow-[0_10px_25px_rgba(234,179,8,0.35)]"></canvas>
+            </div>
             
-            <h1 class="text-3xl font-extrabold text-yellow-500 tracking-wide">Tradescrow</h1>
-            <p class="text-gray-400 text-sm mt-2">Decentralized P2P Account Escrow Portal</p>
+            <h1 class="text-3xl font-extrabold text-yellow-500 tracking-wide mt-2">Tradescrow</h1>
+            <p class="text-gray-400 text-sm mt-1">Decentralized P2P Account Escrow Portal</p>
+            <p class="text-[10px] text-yellow-500/70 tracking-widest uppercase mt-1">✨ Drag or Swipe Logo to Rotate ✨</p>
         </div>
 
         <form id="authForm" class="space-y-5">
@@ -82,6 +93,107 @@
         </div>
     </div>
 
+    <!-- Interactive 3D Rotation Script -->
+    <script>
+        const canvas = document.getElementById('logo3dCanvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+        camera.position.z = 3.2;
+
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+        renderer.setSize(176, 176);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+        scene.add(ambientLight);
+
+        const goldLight = new THREE.PointLight(0xeab308, 2, 10);
+        goldLight.position.set(2, 2, 3);
+        scene.add(goldLight);
+
+        // Load Logo Texture
+        const textureLoader = new THREE.TextureLoader();
+        const texture = textureLoader.load('logo.png');
+
+        // Create 3D Shield Mesh
+        const geometry = new THREE.PlaneGeometry(2.1, 2.1);
+        const material = new THREE.MeshStandardMaterial({
+            map: texture,
+            transparent: true,
+            side: THREE.DoubleSide,
+            roughness: 0.3,
+            metalness: 0.4
+        });
+
+        const logoMesh = new THREE.Mesh(geometry, material);
+        scene.add(logoMesh);
+
+        // Interaction Variables
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let targetRotationY = 0;
+        let targetRotationX = 0;
+
+        function getPos(e) {
+            return {
+                x: e.touches ? e.touches[0].clientX : e.clientX,
+                y: e.touches ? e.touches[0].clientY : e.clientY
+            };
+        }
+
+        function startDrag(e) {
+            isDragging = true;
+            const pos = getPos(e);
+            previousMousePosition = { x: pos.x, y: pos.y };
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            const pos = getPos(e);
+            const deltaX = pos.x - previousMousePosition.x;
+            const deltaY = pos.y - previousMousePosition.y;
+
+            targetRotationY += deltaX * 0.015;
+            targetRotationX += deltaY * 0.015;
+
+            previousMousePosition = { x: pos.x, y: pos.y };
+        }
+
+        function stopDrag() {
+            isDragging = false;
+        }
+
+        // Event Listeners (Mouse & Mobile Touch)
+        canvas.addEventListener('mousedown', startDrag);
+        window.addEventListener('mousemove', drag);
+        window.addEventListener('mouseup', stopDrag);
+
+        canvas.addEventListener('touchstart', startDrag);
+        window.addEventListener('touchmove', drag);
+        window.addEventListener('touchend', stopDrag);
+
+        // Smooth Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Inertia rotation smoothing
+            logoMesh.rotation.y += (targetRotationY - logoMesh.rotation.y) * 0.1;
+            logoMesh.rotation.x += (targetRotationX - logoMesh.rotation.x) * 0.1;
+
+            // Slow passive float rotation when user isn't holding it
+            if (!isDragging) {
+                targetRotationY += 0.005;
+                targetRotationX *= 0.95; // Return pitch gently back to straight
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+
+    <!-- Supabase Auth Script -->
     <script>
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
