@@ -36,6 +36,17 @@
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden select-none">
 
+    <!-- Full-Screen Preloader / Page Transition Overlay -->
+    <div id="preloader" class="fixed inset-0 z-50 bg-gray-950 flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="relative flex items-center justify-center">
+            <!-- Pulsing outer ring -->
+            <div class="absolute w-28 h-28 rounded-full border-2 border-yellow-500/30 animate-ping"></div>
+            <!-- Animated Spinner Logo -->
+            <img src="logo.png" alt="Loading Tradescrow..." class="w-20 h-20 object-contain drop-shadow-[0_0_20px_rgba(234,179,8,0.6)] animate-pulse">
+        </div>
+        <p id="preloaderText" class="text-yellow-500 text-xs font-bold uppercase tracking-widest mt-6 animate-pulse">Initializing Portal...</p>
+    </div>
+
     <!-- Randomly Drifting Floating Emoji Background Pattern -->
     <div class="absolute -top-[60px] -left-[60px] -right-[60px] -bottom-[60px] pointer-events-none opacity-[0.04] select-none z-0 overflow-hidden">
         <svg width="100%" height="100%" class="animate-bg-random" xmlns="http://www.w3.org/2000/svg">
@@ -62,6 +73,7 @@
             
             <h1 class="text-3xl font-extrabold text-yellow-500 tracking-wide mt-2">Tradescrow</h1>
             <p class="text-gray-400 text-sm mt-1">Decentralized P2P Account Escrow Portal</p>
+            <p class="text-[10px] text-yellow-500/70 tracking-widest uppercase mt-1">✨ Drag or Swipe Logo to Rotate ✨</p>
         </div>
 
         <form id="authForm" class="space-y-5">
@@ -91,6 +103,34 @@
             <iframe class="w-full h-full" src="https://www.youtube.com/embed/4SeAcQRruh4?si=M4s1wiKFb4D5gpwq" title="Tradescrow Tutorial" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
         </div>
     </div>
+
+    <!-- Page Loader Script -->
+    <script>
+        const preloader = document.getElementById('preloader');
+        const preloaderText = document.getElementById('preloaderText');
+
+        // Function to smoothly hide the preloader
+        function hidePreloader() {
+            if (preloader) {
+                preloader.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    preloader.style.display = 'none';
+                }, 500);
+            }
+        }
+
+        // Function to show preloader with custom text
+        function showPreloader(msg = "Loading Tradescrow...") {
+            if (preloader) {
+                preloaderText.innerText = msg;
+                preloader.style.display = 'flex';
+                preloader.classList.remove('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        // Hide preloader when entire page and assets load
+        window.addEventListener('load', hidePreloader);
+    </script>
 
     <!-- Interactive 3D Rotation Script -->
     <script>
@@ -208,6 +248,7 @@
         async function checkSession() {
             const { data } = await supabaseClient.auth.getSession();
             if (data.session) {
+                showPreloader("Redirecting to Dashboard...");
                 window.location.href = 'dashboard.html';
             }
         }
@@ -256,6 +297,7 @@
                     authBtn.disabled = false;
                     authBtn.innerText = "Verify & Access Workspace →";
                 } else {
+                    showPreloader("Access Granted! Loading Workspace...");
                     window.location.href = 'dashboard.html';
                 }
             }
