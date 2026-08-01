@@ -148,19 +148,41 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Check multiple possible key names in localStorage
-const activeUser = 
-    localStorage.getItem('tradescrow_user_email') || 
-    localStorage.getItem('userEmail') || 
-    localStorage.getItem('email') || 
-    localStorage.getItem('user');
+// Remove or comment out this strict redirect:
+// const activeUser = localStorage.getItem('tradescrow_user_email');
+// if (!activeUser) { window.location.href = 'index.html'; }
 
-// If still missing, redirect to index/login (or comment out during testing)
-if (!activeUser) {
-    console.warn("No active user found in localStorage. Redirecting...");
-    window.location.href = 'index.html';
+let activeUser = localStorage.getItem('tradescrow_user_email');
+
+async function initUserSession() {
+    // 1. Try fetching the logged-in user directly from Supabase Auth
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    
+    if (user && user.email) {
+        activeUser = user.email;
+        localStorage.setItem('tradescrow_user_email', activeUser);
+    } 
+    
+    // 2. Fallback to stored email or dashboard profile header
+    if (!activeUser) {
+        activeUser = localStorage.getItem('userEmail') || localStorage.getItem('email');
+    }
+
+    // 3. If STILL no user, redirect to login page (not index if index loops to dashboard)
+    if (!activeUser) {
+        console.warn("No active session found on this domain.");
+        window.location.href = 'index.html';
+        return;
+    }
+
+    // Start loading data after session is confirmed
+    loadGlobalHistory();
+    listenToChatStream();
 }
-        
+
+// Run session check on page load
+initUserSession();
+
         let selectedImageFile = null;
 
         // Image Handling
