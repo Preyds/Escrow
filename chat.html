@@ -148,11 +148,19 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const activeUser = localStorage.getItem('tradescrow_user_email');
-        if (!activeUser) {
-            window.location.href = 'index.html';
-        }
+        // Check multiple possible key names in localStorage
+const activeUser = 
+    localStorage.getItem('tradescrow_user_email') || 
+    localStorage.getItem('userEmail') || 
+    localStorage.getItem('email') || 
+    localStorage.getItem('user');
 
+// If still missing, redirect to index/login (or comment out during testing)
+if (!activeUser) {
+    console.warn("No active user found in localStorage. Redirecting...");
+    window.location.href = 'index.html';
+}
+        
         let selectedImageFile = null;
 
         // Image Handling
