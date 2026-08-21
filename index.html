@@ -53,8 +53,8 @@
         <div class="relative flex items-center justify-center">
             <!-- Pulsing outer ring -->
             <div class="absolute w-28 h-28 rounded-full border-2 border-yellow-500/30 animate-ping"></div>
-            <!-- Animated Spinner Logo -->
-            <img src="logo.webp" alt="Loading Tradescrow..." class="w-20 h-20 object-contain drop-shadow-[0_0_20px_rgba(234,179,8,0.6)] animate-pulse">
+            <!-- Animated Spinner Logo with Explicit Dimensions to Eliminate Shift -->
+            <img src="logo.webp" alt="Loading Tradescrow..." width="80" height="80" class="w-20 h-20 object-contain drop-shadow-[0_0_20px_rgba(234,179,8,0.6)] animate-pulse">
         </div>
         <p id="preloaderText" class="text-yellow-500 text-xs font-bold uppercase tracking-widest mt-6 animate-pulse">Initializing Portal...</p>
     </div>
@@ -80,9 +80,9 @@
         <div class="w-full bg-gray-800 border border-gray-700 rounded-2xl p-8 shadow-xl">
             <div class="text-center mb-6">
                 
-                <!-- 3D Interactive Canvas Container -->
-                <div class="relative w-44 h-44 mx-auto flex items-center justify-center">
-                    <canvas id="logo3dCanvas" class="w-full h-full drop-shadow-[0_10px_25px_rgba(234,179,8,0.35)]"></canvas>
+                <!-- 3D Interactive Canvas Container with Preserved Height/Width -->
+                <div class="relative w-44 h-44 min-h-[176px] min-w-[176px] mx-auto flex items-center justify-center">
+                    <canvas id="logo3dCanvas" width="176" height="176" class="w-full h-full drop-shadow-[0_10px_25px_rgba(234,179,8,0.35)]"></canvas>
                 </div>
                 
                 <h1 class="text-3xl font-extrabold text-yellow-500 tracking-wide mt-2">Tradescrow</h1>
@@ -107,29 +107,30 @@
                 </button>
             </form>
         </div>
-<!-- Explainer Video Card (Optimized Facade) -->
-<div class="w-full bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl">
-    <h2 class="text-sm font-bold uppercase tracking-wider text-yellow-500 mb-3 flex items-center gap-2">
-        📖 How Tradescrow Works
-    </h2>
-    <div id="videoContainer" class="relative w-full aspect-video rounded-xl overflow-hidden border border-gray-700 bg-gray-950 cursor-pointer flex items-center justify-center group" onclick="loadYoutubeVideo()">
-        <!-- Video Poster Thumbnail -->
-        <img src="https://img.youtube.com/vi/4SeAcQRruh4/hqdefault.jpg" alt="How Tradescrow Works" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" loading="lazy">
-        <!-- Play Button Overlay -->
-        <div class="relative z-10 w-14 h-14 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition">
-            <svg class="w-6 h-6 text-gray-950 fill-current ml-1" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"/>
-            </svg>
-        </div>
-    </div>
-</div>
 
-<script>
-    function loadYoutubeVideo() {
-        const container = document.getElementById('videoContainer');
-        container.innerHTML = `<iframe src="https://www.youtube.com/embed/4SeAcQRruh4?autoplay=1" title="How Tradescrow Works" class="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-    }
-</script>
+        <!-- Explainer Video Card (Optimized Facade) -->
+        <div class="w-full bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-yellow-500 mb-3 flex items-center gap-2">
+                📖 How Tradescrow Works
+            </h2>
+            <div id="videoContainer" class="relative w-full aspect-video min-h-[200px] rounded-xl overflow-hidden border border-gray-700 bg-gray-950 cursor-pointer flex items-center justify-center group" onclick="loadYoutubeVideo()">
+                <!-- Video Poster Thumbnail with Explicit Dimensions -->
+                <img src="https://img.youtube.com/vi/4SeAcQRruh4/hqdefault.jpg" alt="How Tradescrow Works" width="480" height="270" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" loading="lazy">
+                <!-- Play Button Overlay -->
+                <div class="relative z-10 w-14 h-14 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition">
+                    <svg class="w-6 h-6 text-gray-950 fill-current ml-1" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function loadYoutubeVideo() {
+                const container = document.getElementById('videoContainer');
+                container.innerHTML = `<iframe src="https://www.youtube.com/embed/4SeAcQRruh4?autoplay=1" title="How Tradescrow Works" class="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            }
+        </script>
     </main>
 
     <!-- Page Loader Script -->
@@ -181,7 +182,7 @@
 
         // Load Logo Texture
         const textureLoader = new THREE.TextureLoader();
-        const texture = textureLoader.load('logo.png');
+        const texture = textureLoader.load('logo.webp');
 
         // Create 3D Shield Mesh
         const geometry = new THREE.PlaneGeometry(2.1, 2.1);
