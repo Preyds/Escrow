@@ -125,14 +125,22 @@
         const roleSelect = document.getElementById('userRole');
         const sellerBankSection = document.getElementById('sellerBankSection');
 
-        // Custom Toast Notification System
+        // Custom Safe Toast Notification System
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
             
             toast.className = `${bgColor} text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-xl transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto flex items-center gap-2`;
-            toast.innerHTML = `<span>${type === 'success' ? '✓' : '⚠️'}</span> <span>${message}</span>`;
+            
+            const iconSpan = document.createElement('span');
+            iconSpan.textContent = type === 'success' ? '✓' : '⚠️';
+
+            const msgSpan = document.createElement('span');
+            msgSpan.textContent = message;
+
+            toast.appendChild(iconSpan);
+            toast.appendChild(msgSpan);
             
             container.appendChild(toast);
             
@@ -152,8 +160,8 @@
             const escrowFee = amount * 0.02; 
             const totalAmount = amount + escrowFee;
 
-            feeDisplay.innerText = `₦${escrowFee.toLocaleString()}`;
-            totalDisplay.innerText = `₦${totalAmount.toLocaleString()}`;
+            feeDisplay.textContent = `₦${escrowFee.toLocaleString()}`;
+            totalDisplay.textContent = `₦${totalAmount.toLocaleString()}`;
         }
 
         amountInput.addEventListener('input', updateCalculations);
@@ -207,7 +215,12 @@
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
-            btn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Creating Contract...`;
+            
+            btn.textContent = "";
+            const spinner = document.createElement('span');
+            spinner.className = "animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2";
+            btn.appendChild(spinner);
+            btn.appendChild(document.createTextNode(" Creating Contract..."));
             
             const asset = document.getElementById('assetType').value;
             const amount = parseInt(document.getElementById('tradeAmount').value);
@@ -245,7 +258,7 @@
             if (error) {
                 showToast('Database Error: ' + error.message, 'error');
                 btn.disabled = false;
-                btn.innerText = 'Initialize Escrow Deal';
+                btn.textContent = 'Initialize Escrow Deal';
                 return;
             }
 
@@ -266,6 +279,6 @@
 
             window.location.href = `room.html?id=${newTradeId}`;
         }
-    </script>
+                </script>
 </body>
 </html>
