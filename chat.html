@@ -148,44 +148,34 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Remove or comment out this strict redirect:
-// const activeUser = localStorage.getItem('tradescrow_user_email');
-// if (!activeUser) { window.location.href = 'index.html'; }
+        let activeUser = localStorage.getItem('tradescrow_user_email');
 
-let activeUser = localStorage.getItem('tradescrow_user_email');
+        async function initUserSession() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            
+            if (user && user.email) {
+                activeUser = user.email;
+                localStorage.setItem('tradescrow_user_email', activeUser);
+            } 
+            
+            if (!activeUser) {
+                activeUser = localStorage.getItem('userEmail') || localStorage.getItem('email');
+            }
 
-async function initUserSession() {
-    // 1. Try fetching the logged-in user directly from Supabase Auth
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    
-    if (user && user.email) {
-        activeUser = user.email;
-        localStorage.setItem('tradescrow_user_email', activeUser);
-    } 
-    
-    // 2. Fallback to stored email or dashboard profile header
-    if (!activeUser) {
-        activeUser = localStorage.getItem('userEmail') || localStorage.getItem('email');
-    }
+            if (!activeUser) {
+                console.warn("No active session found on this domain.");
+                window.location.href = 'index.html';
+                return;
+            }
 
-    // 3. If STILL no user, redirect to login page (not index if index loops to dashboard)
-    if (!activeUser) {
-        console.warn("No active session found on this domain.");
-        window.location.href = 'index.html';
-        return;
-    }
+            loadGlobalHistory();
+            listenToRealtimeChat();
+        }
 
-    // Start loading data after session is confirmed
-    loadGlobalHistory();
-    listenToChatStream();
-}
-
-// Run session check on page load
-initUserSession();
+        initUserSession();
 
         let selectedImageFile = null;
 
-        // Image Handling
         function handleImageSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -194,7 +184,7 @@ initUserSession();
                 return;
             }
             selectedImageFile = file;
-            document.getElementById('previewFileName').innerText = file.name;
+            document.getElementById('previewFileName').textContent = file.name;
             const reader = new FileReader();
             reader.onload = function(e) {
                 document.getElementById('imagePreview').src = e.target.result;
@@ -238,43 +228,66 @@ initUserSession();
                 .limit(70);
 
             if (error) {
-                chatBox.innerText = "Error syncing messages: " + error.message;
+                chatBox.textContent = "Error syncing messages: " + error.message;
                 return;
             }
 
-            chatBox.innerHTML = "";
+            chatBox.textContent = "";
             if (data && data.length > 0) {
                 data.forEach(msg => renderMessageRow(msg));
             } else {
-                chatBox.innerHTML = `<p class="text-gray-600 text-xs text-center my-auto">Welcome to the hub! Type a message below to start the conversation.</p>`;
+                const emptyMsg = document.createElement('p');
+                emptyMsg.className = "text-gray-600 text-xs text-center my-auto";
+                emptyMsg.textContent = "Welcome to the hub! Type a message below to start the conversation.";
+                chatBox.appendChild(emptyMsg);
             }
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function renderMessageRow(msg) {
             const chatBox = document.getElementById('globalChatWindow');
-            if (chatBox.querySelector('.text-gray-600')) chatBox.innerHTML = "";
+            if (chatBox.querySelector('.text-gray-600')) chatBox.textContent = "";
 
-            const isMe = msg.sender_email.toLowerCase() === activeUser.toLowerCase();
+            const isMe = msg.sender_email && (msg.sender_email.toLowerCase() === activeUser.toLowerCase());
             const msgBubble = document.createElement('div');
             
             msgBubble.className = `max-w-[85%] p-3 rounded-xl text-xs flex flex-col space-y-2 ${
                 isMe ? 'bg-yellow-500/10 text-gray-200 ml-auto border border-yellow-500/20' : 'bg-gray-900 border border-gray-800 text-gray-200'
             }`;
 
-            let imageHtml = '';
+            // Header (Email & Timestamp)
+            const metaHeader = document.createElement('div');
+            metaHeader.className = "flex justify-between items-center gap-6 font-mono text-[10px] text-gray-500";
+            
+            const senderSpan = document.createElement('span');
+            senderSpan.className = "font-bold text-gray-400 break-all";
+            senderSpan.textContent = msg.sender_email;
+
+            const timeSpan = document.createElement('span');
+            timeSpan.textContent = new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            metaHeader.appendChild(senderSpan);
+            metaHeader.appendChild(timeSpan);
+            msgBubble.appendChild(metaHeader);
+
+            // Optional Image Attachment
             if (msg.image_url) {
-                imageHtml = `<img src="${msg.image_url}" onclick="openLightbox('${msg.image_url}')" class="max-h-52 rounded-lg object-cover cursor-pointer hover:opacity-90 transition border border-gray-700/50 my-1" alt="Attachment" />`;
+                const imgEl = document.createElement('img');
+                imgEl.src = msg.image_url;
+                imgEl.alt = "Attachment";
+                imgEl.className = "max-h-52 rounded-lg object-cover cursor-pointer hover:opacity-90 transition border border-gray-700/50 my-1";
+                imgEl.onclick = () => openLightbox(msg.image_url);
+                msgBubble.appendChild(imgEl);
             }
 
-            msgBubble.innerHTML = `
-                <div class="flex justify-between items-center gap-6 font-mono text-[10px] text-gray-500">
-                    <span class="font-bold text-gray-400 break-all">${msg.sender_email}</span>
-                    <span>${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                </div>
-                ${imageHtml}
-                ${msg.message_text ? `<p class="font-sans leading-relaxed break-all">${msg.message_text}</p>` : ''}
-            `;
+            // Text Message Content (Safely injected as textContent)
+            if (msg.message_text) {
+                const textPara = document.createElement('p');
+                textPara.className = "font-sans leading-relaxed break-all";
+                textPara.textContent = msg.message_text;
+                msgBubble.appendChild(textPara);
+            }
+
             chatBox.appendChild(msgBubble);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
@@ -315,7 +328,7 @@ initUserSession();
 
         function listenToRealtimeChat() {
             const liveBadge = document.getElementById('liveBadge');
-            liveBadge.innerText = "Connecting...";
+            liveBadge.textContent = "Connecting...";
 
             supabaseClient
                 .channel('global-stream')
@@ -325,10 +338,10 @@ initUserSession();
                 .subscribe((status) => {
                     if (status === 'SUBSCRIBED') {
                         liveBadge.className = "text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 px-2.5 py-0.5 rounded-full font-bold";
-                        liveBadge.innerText = "● Hub Connected";
+                        liveBadge.textContent = "● Hub Connected";
                     } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
                         liveBadge.className = "text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-0.5 rounded-full font-bold";
-                        liveBadge.innerText = "Disconnected";
+                        liveBadge.textContent = "Disconnected";
                     }
                 });
         }
@@ -382,7 +395,6 @@ initUserSession();
                 return;
             }
 
-            // Post invitation announcement to chat
             await supabaseClient.from('global_messages').insert([{
                 sender_email: '🎮 Game Bot',
                 message_text: `⚔️ ${activeUser} created a new ${gameType.toUpperCase()} challenge! Open Mini Games to join!`
@@ -402,40 +414,65 @@ initUserSession();
                 .limit(10);
 
             if (error) {
-                lobbyList.innerHTML = `<p class="text-red-400 italic col-span-2">Error loading lobby</p>`;
+                lobbyList.textContent = "Error loading lobby";
                 return;
             }
 
-            // Check if current user is already in an active/waiting game
             const myActiveGame = data.find(g => g.player_1 === activeUser || g.player_2 === activeUser);
             if (myActiveGame && (!currentSession || currentSession.id !== myActiveGame.id)) {
                 loadActiveSession(myActiveGame);
             }
 
             if (!data || data.length === 0) {
-                lobbyList.innerHTML = `<p class="text-gray-500 italic col-span-2">No active challenges. Click "+ Challenge Player" above to start one!</p>`;
+                lobbyList.textContent = "No active challenges. Click \"+ Challenge Player\" above to start one!";
                 return;
             }
 
-            lobbyList.innerHTML = "";
+            lobbyList.textContent = "";
             data.forEach(game => {
                 const isMyGame = game.player_1 === activeUser || game.player_2 === activeUser;
                 const card = document.createElement('div');
                 card.className = "bg-gray-950 p-2.5 rounded-xl border border-gray-800 flex justify-between items-center";
                 
-                card.innerHTML = `
-                    <div>
-                        <span class="font-bold text-yellow-500 uppercase text-[10px]">${game.game_type}</span>
-                        <div class="text-[11px] text-gray-300 font-medium truncate max-w-[150px]">By: ${game.player_1}</div>
-                        <span class="text-[9px] text-gray-500">${game.status === 'waiting' ? '⏳ Waiting for opponent' : '⚡ Game in progress'}</span>
-                    </div>
-                    ${isMyGame 
-                        ? `<button onclick="rejoinGame('${game.id}')" class="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-[10px] font-bold px-2.5 py-1 rounded-lg">Play</button>`
-                        : game.status === 'waiting'
-                            ? `<button onclick="joinGameSession('${game.id}')" class="bg-green-500/20 text-green-400 border border-green-500/30 text-[10px] font-bold px-2.5 py-1 rounded-lg hover:bg-green-500/30">Join</button>`
-                            : `<span class="text-[10px] text-gray-600 font-semibold">Full</span>`
-                    }
-                `;
+                const metaContainer = document.createElement('div');
+                
+                const gameTypeBadge = document.createElement('span');
+                gameTypeBadge.className = "font-bold text-yellow-500 uppercase text-[10px]";
+                gameTypeBadge.textContent = game.game_type;
+
+                const creatorDiv = document.createElement('div');
+                creatorDiv.className = "text-[11px] text-gray-300 font-medium truncate max-w-[150px]";
+                creatorDiv.textContent = `By: ${game.player_1}`;
+
+                const statusSpan = document.createElement('span');
+                statusSpan.className = "text-[9px] text-gray-500";
+                statusSpan.textContent = game.status === 'waiting' ? '⏳ Waiting for opponent' : '⚡ Game in progress';
+
+                metaContainer.appendChild(gameTypeBadge);
+                metaContainer.appendChild(creatorDiv);
+                metaContainer.appendChild(statusSpan);
+
+                card.appendChild(metaContainer);
+
+                if (isMyGame) {
+                    const playBtn = document.createElement('button');
+                    playBtn.className = "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-[10px] font-bold px-2.5 py-1 rounded-lg";
+                    playBtn.textContent = "Play";
+                    playBtn.onclick = () => rejoinGame(game.id);
+                    card.appendChild(playBtn);
+                } else if (game.status === 'waiting') {
+                    const joinBtn = document.createElement('button');
+                    joinBtn.className = "bg-green-500/20 text-green-400 border border-green-500/30 text-[10px] font-bold px-2.5 py-1 rounded-lg hover:bg-green-500/30";
+                    joinBtn.textContent = "Join";
+                    joinBtn.onclick = () => joinGameSession(game.id);
+                    card.appendChild(joinBtn);
+                } else {
+                    const fullSpan = document.createElement('span');
+                    fullSpan.className = "text-[10px] text-gray-600 font-semibold";
+                    fullSpan.textContent = "Full";
+                    card.appendChild(fullSpan);
+                }
+
                 lobbyList.appendChild(card);
             });
         }
@@ -467,8 +504,8 @@ initUserSession();
             document.getElementById('gameArena').classList.remove('hidden');
             document.getElementById('leaveGameBtn').classList.remove('hidden');
 
-            document.getElementById('arenaP1').innerText = session.player_1;
-            document.getElementById('arenaP2').innerText = session.player_2 || 'Waiting for player...';
+            document.getElementById('arenaP1').textContent = session.player_1;
+            document.getElementById('arenaP2').textContent = session.player_2 || 'Waiting for player...';
 
             if (session.game_type === 'tictactoe') {
                 document.getElementById('tictactoeView').classList.remove('hidden');
@@ -487,19 +524,19 @@ initUserSession();
         function updateGameTurnUI() {
             const statusEl = document.getElementById('gameTurnStatus');
             if (currentSession.status === 'waiting') {
-                statusEl.innerText = "⏳ Waiting for an opponent to join...";
+                statusEl.textContent = "⏳ Waiting for an opponent to join...";
                 statusEl.className = "text-xs text-center font-bold text-yellow-400 mb-3 animate-pulse";
                 return;
             }
 
             if (currentSession.status === 'finished') {
-                statusEl.innerText = currentSession.winner ? `🎉 Winner: ${currentSession.winner}` : "🤝 Game ended in a Draw!";
+                statusEl.textContent = currentSession.winner ? `🎉 Winner: ${currentSession.winner}` : "🤝 Game ended in a Draw!";
                 statusEl.className = "text-xs text-center font-bold text-green-400 mb-3";
                 return;
             }
 
             const isMyTurn = currentSession.current_turn.toLowerCase() === activeUser.toLowerCase();
-            statusEl.innerText = isMyTurn ? "👉 IT IS YOUR TURN!" : `⏳ Waiting for ${currentSession.current_turn}...`;
+            statusEl.textContent = isMyTurn ? "👉 IT IS YOUR TURN!" : `⏳ Waiting for ${currentSession.current_turn}...`;
             statusEl.className = `text-xs text-center font-bold mb-3 ${isMyTurn ? 'text-green-400 animate-bounce' : 'text-gray-400'}`;
         }
 
@@ -508,7 +545,7 @@ initUserSession();
                 .channel(`game-${gameId}`)
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'game_sessions', filter: `id=eq.${gameId}` }, (payload) => {
                     currentSession = payload.new;
-                    document.getElementById('arenaP2').innerText = currentSession.player_2 || 'Waiting for player...';
+                    document.getElementById('arenaP2').textContent = currentSession.player_2 || 'Waiting for player...';
 
                     if (currentSession.game_type === 'tictactoe') {
                         renderTicTacToeBoard(currentSession.game_state);
@@ -534,7 +571,7 @@ initUserSession();
             const cells = document.querySelectorAll('.game-cell');
             cells.forEach((cell, idx) => {
                 const val = boardArray[idx] || '';
-                cell.innerText = val;
+                cell.textContent = val;
                 cell.className = `game-cell h-16 bg-gray-950 border border-gray-700 rounded-xl text-xl font-bold transition ${
                     val === 'X' ? 'text-yellow-400' : val === 'O' ? 'text-blue-400' : 'text-white hover:bg-gray-900'
                 }`;
@@ -567,134 +604,6 @@ initUserSession();
             const { data } = await supabaseClient
                 .from('game_sessions')
                 .update({
-                    game_state: board,
-                    current_turn: nextTurn,
-                    status: newStatus,
-                    winner: winnerUser
-                })
-                .eq('id', currentSession.id)
-                .select()
-                .single();
-
-            if (data) {
-                currentSession = data;
-                renderTicTacToeBoard(data.game_state);
-                updateGameTurnUI();
-            }
-        }
-
-        function checkTicTacToeWinner(board) {
-            const winPatterns = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-            for (let [a,b,c] of winPatterns) {
-                if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
-            }
-            if (!board.includes("")) return 'Draw';
-            return null;
-        }
-
-        // --- P2P CHESS ENGINE ---
-        function renderChessBoard(fen) {
-            if (!chessGame) chessGame = new Chess();
-            chessGame.load(fen);
-
-            if (!chessBoardInstance) {
-                chessBoardInstance = Chessboard('chessBoard', {
-                    draggable: true,
-                    position: fen,
-                    pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
-                    onDragStart: (src, piece) => {
-                        if (currentSession.status !== 'active') return false;
-                        if (currentSession.current_turn.toLowerCase() !== activeUser.toLowerCase()) return false;
-                        const isP1 = currentSession.player_1.toLowerCase() === activeUser.toLowerCase();
-                        if ((isP1 && piece.search(/^b/) !== -1) || (!isP1 && piece.search(/^w/) !== -1)) return false;
-                    },
-                    onDrop: (src, target) => {
-                        const move = chessGame.move({ from: src, to: target, promotion: 'q' });
-                        if (move === null) return 'snapback';
-                        syncChessMove(chessGame.fen());
-                    },
-                    onSnapEnd: () => chessBoardInstance.position(chessGame.fen())
-                });
-
-                // Tap-to-move bindings
-                $('#chessBoard').off('click', '.square-55d63').on('click', '.square-55d63', function() {
-                    const square = $(this).attr('data-square');
-                    handleChessSquareTap(square);
-                });
-            } else {
-                chessBoardInstance.position(fen);
-            }
-        }
-
-        function handleChessSquareTap(square) {
-            if (!currentSession || currentSession.status !== 'active') return;
-            if (currentSession.current_turn.toLowerCase() !== activeUser.toLowerCase()) return;
-
-            if (selectedSquare) {
-                const move = chessGame.move({ from: selectedSquare, to: square, promotion: 'q' });
-                if (move) {
-                    chessBoardInstance.position(chessGame.fen());
-                    clearChessHighlights();
-                    selectedSquare = null;
-                    syncChessMove(chessGame.fen());
-                    return;
-                }
-            }
-
-            const piece = chessGame.get(square);
-            clearChessHighlights();
-
-            const isP1 = currentSession.player_1.toLowerCase() === activeUser.toLowerCase();
-            const myColor = isP1 ? 'w' : 'b';
-
-            if (piece && piece.color === myColor) {
-                selectedSquare = square;
-                $(`#chessBoard .square-${square}`).addClass('highlight-square');
-                const moves = chessGame.moves({ square: square, verbose: true });
-                moves.forEach(m => $(`#chessBoard .square-${m.to}`).addClass('highlight-hint'));
-            } else {
-                selectedSquare = null;
-            }
-        }
-
-        function clearChessHighlights() {
-            $('#chessBoard .square-55d63').removeClass('highlight-square highlight-hint');
-        }
-
-        async function syncChessMove(newFen) {
-            let nextTurn = currentSession.player_1.toLowerCase() === activeUser.toLowerCase() ? currentSession.player_2 : currentSession.player_1;
-            let newStatus = 'active';
-            let winnerUser = null;
-
-            if (chessGame.in_checkmate()) {
-                newStatus = 'finished';
-                winnerUser = activeUser;
-            } else if (chessGame.in_draw()) {
-                newStatus = 'finished';
-            }
-
-            const { data } = await supabaseClient
-                .from('game_sessions')
-                .update({
-                    game_state: newFen,
-                    current_turn: nextTurn,
-                    status: newStatus,
-                    winner: winnerUser
-                })
-                .eq('id', currentSession.id)
-                .select()
-                .single();
-
-            if (data) {
-                currentSession = data;
-                updateGameTurnUI();
-            }
-        }
-
-        // Initialize execution sequencing run
-        loadGlobalHistory();
-        listenToRealtimeChat();
-        fetchLobbySessions();
-    </script>
+                    game_
 </body>
 </html>
