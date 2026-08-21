@@ -604,6 +604,132 @@
             const { data } = await supabaseClient
                 .from('game_sessions')
                 .update({
-                    game_
+                    game_state: board,
+                    current_turn: nextTurn,
+                    status: newStatus,
+                    winner: winnerUser
+                })
+                .eq('id', currentSession.id)
+                .select()
+                .single();
+
+            if (data) {
+                currentSession = data;
+                renderTicTacToeBoard(data.game_state);
+                updateGameTurnUI();
+            }
+        }
+
+        function checkTicTacToeWinner(board) {
+            const winPatterns = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            for (let [a,b,c] of winPatterns) {
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
+            }
+            if (!board.includes("")) return 'Draw';
+            return null;
+        }
+
+        // --- P2P CHESS ENGINE ---
+        function renderChessBoard(fen) {
+            if (!chessGame) chessGame = new Chess();
+            chessGame.load(fen);
+
+            if (!chessBoardInstance) {
+                chessBoardInstance = Chessboard('chessBoard', {
+                    draggable: true,
+                    position: fen,
+                    pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+                    onDragStart: (src, piece) => {
+                        if (currentSession.status !== 'active') return false;
+                        if (currentSession.current_turn.toLowerCase() !== activeUser.toLowerCase()) return false;
+                        const isP1 = currentSession.player_1.toLowerCase() === activeUser.toLowerCase();
+                        if ((isP1 && piece.search(/^b/) !== -1) || (!isP1 && piece.search(/^w/) !== -1)) return false;
+                    },
+                    onDrop: (src, target) => {
+                        const move = chessGame.move({ from: src, to: target, promotion: 'q' });
+                        if (move === null) return 'snapback';
+                        syncChessMove(chessGame.fen());
+                    },
+                    onSnapEnd: () => chessBoardInstance.position(chessGame.fen())
+                });
+
+                $('#chessBoard').off('click', '.square-55d63').on('click', '.square-55d63', function() {
+                    const square = $(this).attr('data-square');
+                    handleChessSquareTap(square);
+                });
+            } else {
+                chessBoardInstance.position(fen);
+            }
+        }
+
+        function handleChessSquareTap(square) {
+            if (!currentSession || currentSession.status !== 'active') return;
+            if (currentSession.current_turn.toLowerCase() !== activeUser.toLowerCase()) return;
+
+            if (selectedSquare) {
+                const move = chessGame.move({ from: selectedSquare, to: square, promotion: 'q' });
+                if (move) {
+                    chessBoardInstance.position(chessGame.fen());
+                    clearChessHighlights();
+                    selectedSquare = null;
+                    syncChessMove(chessGame.fen());
+                    return;
+                }
+            }
+
+            const piece = chessGame.get(square);
+            clearChessHighlights();
+
+            const isP1 = currentSession.player_1.toLowerCase() === activeUser.toLowerCase();
+            const myColor = isP1 ? 'w' : 'b';
+
+            if (piece && piece.color === myColor) {
+                selectedSquare = square;
+                $(`#chessBoard .square-${square}`).addClass('highlight-square');
+                const moves = chessGame.moves({ square: square, verbose: true });
+                moves.forEach(m => $(`#chessBoard .square-${m.to}`).addClass('highlight-hint'));
+            } else {
+                selectedSquare = null;
+            }
+        }
+
+        function clearChessHighlights() {
+            $('#chessBoard .square-55d63').removeClass('highlight-square highlight-hint');
+        }
+
+        async function syncChessMove(newFen) {
+            let nextTurn = currentSession.player_1.toLowerCase() === activeUser.toLowerCase() ? currentSession.player_2 : currentSession.player_1;
+            let newStatus = 'active';
+            let winnerUser = null;
+
+            if (chessGame.in_checkmate()) {
+                newStatus = 'finished';
+                winnerUser = activeUser;
+            } else if (chessGame.in_draw()) {
+                newStatus = 'finished';
+        }
+        const { data } = await supabaseClient
+                .from('game_sessions')
+                .update({
+                    game_state: newFen,
+                    current_turn: nextTurn,
+                    status: newStatus,
+                    winner: winnerUser
+                })
+                .eq('id', currentSession.id)
+                .select()
+                .single();
+
+            if (data) {
+                currentSession = data;
+                updateGameTurnUI();
+            }
+        }
+
+        loadGlobalHistory();
+        listenToRealtimeChat();
+        fetchLobbySessions();
+    </script>
+                        
 </body>
 </html>
