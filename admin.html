@@ -74,8 +74,7 @@
         </div>
 
     </main>
-
-    <script>
+            <script>
         // Secure Access Handshake Verification Control
         (function verifyAdminAccess() {
             const adminSessionKey = "tradescrow_admin_auth_token";
@@ -111,17 +110,23 @@
 
             const queue = document.getElementById('disputeQueue');
             const countLabel = document.getElementById('disputeCount');
-            queue.innerHTML = "";
+            queue.textContent = "";
 
             if (error) {
-                queue.innerHTML = `<p class="text-red-500 py-2">Failed to sync database logs.</p>`;
+                const errP = document.createElement('p');
+                errP.className = "text-red-500 py-2";
+                errP.textContent = "Failed to sync database logs.";
+                queue.appendChild(errP);
                 return;
             }
 
-            countLabel.innerText = data ? data.length : 0;
+            countLabel.textContent = data ? data.length : 0;
 
             if (!data || data.length === 0) {
-                queue.innerHTML = `<p class="text-gray-600 text-center py-4">No active disputes open.</p>`;
+                const emptyP = document.createElement('p');
+                emptyP.className = "text-gray-600 text-center py-4";
+                emptyP.textContent = "No active disputes open.";
+                queue.appendChild(emptyP);
                 return;
             }
 
@@ -129,18 +134,32 @@
                 const item = document.createElement('div');
                 item.className = `p-3 bg-gray-950 rounded-xl border border-gray-850 hover:border-red-500/40 cursor-pointer transition ${selectedTradeId === trade.id ? 'border-red-500/60 bg-red-500/5' : ''}`;
                 item.onclick = () => loadCaseFile(trade);
-                item.innerHTML = `
-                    <div class="flex justify-between font-bold text-gray-300 mb-1">
-                        <span>${trade.asset_type}</span>
-                        <span class="text-green-400">₦${trade.amount.toLocaleString()}</span>
-                    </div>
-                    <p class="text-[10px] text-gray-500 truncate">ID: ${trade.id}</p>
-                `;
+
+                const topRow = document.createElement('div');
+                topRow.className = "flex justify-between font-bold text-gray-300 mb-1";
+
+                const assetSpan = document.createElement('span');
+                assetSpan.textContent = trade.asset_type;
+
+                const amountSpan = document.createElement('span');
+                amountSpan.className = "text-green-400";
+                amountSpan.textContent = `₦${trade.amount ? trade.amount.toLocaleString() : '0'}`;
+
+                topRow.appendChild(assetSpan);
+                topRow.appendChild(amountSpan);
+
+                const idP = document.createElement('p');
+                idP.className = "text-[10px] text-gray-500 truncate";
+                idP.textContent = `ID: ${trade.id}`;
+
+                item.appendChild(topRow);
+                item.appendChild(idP);
+
                 queue.appendChild(item);
             });
         }
 
-        // NEW FEATURE: Fetch and Sync all Settled Payouts (Option B Manual Router)
+        // Fetch and Sync all Settled Payouts (Option B Manual Router)
         async function fetchPendingPayouts() {
             const { data, error } = await supabaseClient
                 .from('trade')
@@ -150,17 +169,23 @@
 
             const queue = document.getElementById('payoutQueue');
             const countLabel = document.getElementById('payoutCount');
-            queue.innerHTML = "";
+            queue.textContent = "";
 
             if (error) {
-                queue.innerHTML = `<p class="text-red-500 py-2">Failed to sync payout entries.</p>`;
+                const errP = document.createElement('p');
+                errP.className = "text-red-500 py-2";
+                errP.textContent = "Failed to sync payout entries.";
+                queue.appendChild(errP);
                 return;
             }
 
-            countLabel.innerText = data ? data.length : 0;
+            countLabel.textContent = data ? data.length : 0;
 
             if (!data || data.length === 0) {
-                queue.innerHTML = `<p class="text-gray-600 text-center py-6">All clear! No payouts pending.</p>`;
+                const emptyP = document.createElement('p');
+                emptyP.className = "text-gray-600 text-center py-6";
+                emptyP.textContent = "All clear! No payouts pending.";
+                queue.appendChild(emptyP);
                 return;
             }
 
@@ -168,35 +193,65 @@
                 const card = document.createElement('div');
                 card.className = "p-3 bg-gray-950 border border-gray-850 rounded-xl space-y-2";
                 
-                // Ensure default fallbacks display clean text if fields aren't completely ready
                 const bank = trade.seller_bank_name || 'Unspecified Bank';
                 const number = trade.seller_account_number || 'No Account';
                 const name = trade.seller_account_name || 'Unknown Recipient';
 
-                card.innerHTML = `
-                    <div class="flex justify-between font-bold border-b border-gray-800 pb-1.5">
-                        <span class="text-gray-400 text-[10px] uppercase tracking-wider font-mono">VAL: ₦${trade.amount.toLocaleString()}</span>
-                        <span class="text-yellow-500 text-[10px]">Awaiting Transfer</span>
-                    </div>
-                    <div class="space-y-0.5 text-[11px] font-mono text-gray-300">
-                        <p><span class="text-gray-500">Bank:</span> ${bank}</p>
-                        <p><span class="text-gray-500">Acct No:</span> <span class="text-white font-bold select-all">${number}</span></p>
-                        <p class="truncate"><span class="text-gray-500">Name:</span> ${name}</p>
-                    </div>
-                    <button onclick="finalizeManualPayout('${trade.id}', ${trade.amount}, '${number}')" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 px-2 rounded-lg text-[10px] transition mt-1">
-                        ✓ Mark Payout Completed
-                    </button>
-                `;
+                // Header
+                const topDiv = document.createElement('div');
+                topDiv.className = "flex justify-between font-bold border-b border-gray-800 pb-1.5";
+
+                const valSpan = document.createElement('span');
+                valSpan.className = "text-gray-400 text-[10px] uppercase tracking-wider font-mono";
+                valSpan.textContent = `VAL: ₦${trade.amount ? trade.amount.toLocaleString() : '0'}`;
+
+                const statusSpan = document.createElement('span');
+                statusSpan.className = "text-yellow-500 text-[10px]";
+                statusSpan.textContent = "Awaiting Transfer";
+
+                topDiv.appendChild(valSpan);
+                topDiv.appendChild(statusSpan);
+
+                // Bank Details
+                const detailsDiv = document.createElement('div');
+                detailsDiv.className = "space-y-0.5 text-[11px] font-mono text-gray-300";
+
+                const pBank = document.createElement('p');
+                pBank.textContent = `Bank: ${bank}`;
+
+                const pAcct = document.createElement('p');
+                pAcct.textContent = "Acct No: ";
+                const numSpan = document.createElement('span');
+                numSpan.className = "text-white font-bold select-all";
+                numSpan.textContent = number;
+                pAcct.appendChild(numSpan);
+
+                const pName = document.createElement('p');
+                pName.className = "truncate";
+                pName.textContent = `Name: ${name}`;
+
+                detailsDiv.appendChild(pBank);
+                detailsDiv.appendChild(pAcct);
+                detailsDiv.appendChild(pName);
+
+                // Complete Button
+                const btn = document.createElement('button');
+                btn.className = "w-full bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 px-2 rounded-lg text-[10px] transition mt-1";
+                btn.textContent = "✓ Mark Payout Completed";
+                btn.onclick = () => finalizeManualPayout(trade.id, trade.amount, number);
+
+                card.appendChild(topDiv);
+                card.appendChild(detailsDiv);
+                card.appendChild(btn);
+
                 queue.appendChild(card);
             });
         }
 
-        // Action Triggered when Admin hits "Mark Payout Completed"
         async function finalizeManualPayout(tradeId, amount, accountNumber) {
-            const confirmPayout = confirm(`Verify Transfer: Have you manually sent ₦${amount.toLocaleString()} to account (${accountNumber}) on your banking application?`);
+            const confirmPayout = confirm(`Verify Transfer: Have you manually sent ₦${amount ? amount.toLocaleString() : '0'} to account (${accountNumber}) on your banking application?`);
             if (!confirmPayout) return;
 
-            // Updates status to a final closed category state so it rolls off the pending layouts view
             const { error } = await supabaseClient
                 .from('trade')
                 .update({ status: 'settled_closed' })
@@ -210,17 +265,16 @@
             }
         }
 
-        // Load Case Details into Content Panel
         async function loadCaseFile(trade) {
             selectedTradeId = trade.id;
             document.getElementById('emptyPanel').classList.add('hidden');
             document.getElementById('arbitrationPanel').classList.remove('hidden');
 
-            document.getElementById('caseId').innerText = trade.id;
-            document.getElementById('caseAsset').innerText = trade.asset_type;
-            document.getElementById('caseAmount').innerText = '₦' + trade.amount.toLocaleString();
-            document.getElementById('caseBuyer').innerText = trade.buyer_email;
-            document.getElementById('caseSeller').innerText = trade.seller_email;
+            document.getElementById('caseId').textContent = trade.id;
+            document.getElementById('caseAsset').textContent = trade.asset_type;
+            document.getElementById('caseAmount').textContent = '₦' + (trade.amount ? trade.amount.toLocaleString() : '0');
+            document.getElementById('caseBuyer').textContent = trade.buyer_email;
+            document.getElementById('caseSeller').textContent = trade.seller_email;
 
             const { data: messages } = await supabaseClient
                 .from('messages')
@@ -229,22 +283,33 @@
                 .order('created_at', { ascending: true });
 
             const logsContainer = document.getElementById('caseChatLogs');
-            logsContainer.innerHTML = "";
+            logsContainer.textContent = "";
 
             if (!messages || messages.length === 0) {
-                logsContainer.innerHTML = `<p class="text-gray-600 text-center py-8">No conversation records exist inside this room.</p>`;
+                const emptyLog = document.createElement('p');
+                emptyLog.className = "text-gray-600 text-center py-8";
+                emptyLog.textContent = "No conversation records exist inside this room.";
+                logsContainer.appendChild(emptyLog);
             } else {
                 messages.forEach(msg => {
                     const line = document.createElement('div');
                     line.className = "p-2 bg-gray-900 rounded border border-gray-850 text-left";
-                    line.innerHTML = `<strong>[${msg.sender_email}]:</strong> <span class="text-gray-300">${msg.message_text}</span>`;
+
+                    const senderStrong = document.createElement('strong');
+                    senderStrong.textContent = `[${msg.sender_email}]: `;
+
+                    const msgSpan = document.createElement('span');
+                    msgSpan.className = "text-gray-300";
+                    msgSpan.textContent = msg.message_text;
+
+                    line.appendChild(senderStrong);
+                    line.appendChild(msgSpan);
                     logsContainer.appendChild(line);
                 });
             }
             fetchDisputes(); 
         }
 
-        // Force Handle Override Resolution Actions
         async function resolveCase(finalTargetStatus) {
             if (!selectedTradeId) return;
             
@@ -267,16 +332,13 @@
             }
         }
 
-        // Master Dashboard Refresh Aggregator
         function refreshDashboardData() {
             fetchDisputes();
             fetchPendingPayouts();
         }
 
-        // Initialization Scripts
         refreshDashboardData();
 
-        // Realtime Table Channel Listener Sync Rules
         supabaseClient
             .channel('admin-master-sync')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'trade' }, () => {
@@ -284,5 +346,6 @@
             })
             .subscribe();
     </script>
+
 </body>
 </html>
