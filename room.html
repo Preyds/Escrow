@@ -93,7 +93,6 @@
             </div>
         </div>
     </main>
-
     <script>
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
@@ -112,21 +111,26 @@
             setTimeout(() => { window.location.href = 'index.html'; }, 2000);
         }
 
-        // Custom Toast Notifications
+        // Safe Toast System using DOM Nodes
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
             
             toast.className = `${bgColor} text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-xl transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto flex items-center gap-2`;
-            toast.innerHTML = `<span>${type === 'success' ? '✓' : '⚠️'}</span> <span>${message}</span>`;
+            
+            const iconSpan = document.createElement('span');
+            iconSpan.textContent = type === 'success' ? '✓' : '⚠️';
+
+            const msgSpan = document.createElement('span');
+            msgSpan.textContent = message;
+
+            toast.appendChild(iconSpan);
+            toast.appendChild(msgSpan);
             
             container.appendChild(toast);
             
-            setTimeout(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
-            }, 10);
-
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-y-2');
                 setTimeout(() => toast.remove(), 300);
@@ -148,17 +152,18 @@
             }
 
             if (data && data.length > 0) {
-                windowContainer.innerHTML = ""; 
+                windowContainer.textContent = ""; 
                 data.forEach(msg => appendMessageToUI(msg));
                 windowContainer.scrollTop = windowContainer.scrollHeight; 
             }
         }
 
+        // Secure Real-Time Chat Element Builder (Prevents XSS)
         function appendMessageToUI(msg) {
             const windowContainer = document.getElementById('chatMessageWindow');
             
             if (windowContainer.querySelector('.text-gray-600')) {
-                windowContainer.innerHTML = "";
+                windowContainer.textContent = "";
             }
 
             const isSystem = msg.sender_email === 'System';
@@ -166,13 +171,27 @@
             
             const msgElement = document.createElement('div');
             msgElement.className = `p-2 rounded-lg text-[11px] leading-relaxed border border-gray-800 ${msgColor}`;
-            msgElement.innerHTML = `
-                <div class="flex justify-between items-center text-[10px] text-gray-500 font-mono mb-0.5">
-                    <span class="font-bold text-gray-400">${msg.sender_email}</span>
-                    <span>${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                </div>
-                <p class="break-all font-sans">${msg.message_text}</p>
-            `;
+
+            const metaDiv = document.createElement('div');
+            metaDiv.className = "flex justify-between items-center text-[10px] text-gray-500 font-mono mb-0.5";
+
+            const senderSpan = document.createElement('span');
+            senderSpan.className = "font-bold text-gray-400";
+            senderSpan.textContent = msg.sender_email || 'Anonymous';
+
+            const timeSpan = document.createElement('span');
+            timeSpan.textContent = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+
+            metaDiv.appendChild(senderSpan);
+            metaDiv.appendChild(timeSpan);
+
+            const pText = document.createElement('p');
+            pText.className = "break-all font-sans";
+            pText.textContent = msg.message_text || '';
+
+            msgElement.appendChild(metaDiv);
+            msgElement.appendChild(pText);
+
             windowContainer.appendChild(msgElement);
             windowContainer.scrollTop = windowContainer.scrollHeight;
         }
@@ -240,7 +259,7 @@
                 .eq('id', tradeId);
 
             if (error || !data || data.length === 0) {
-                document.getElementById('actionArea').innerText = "Contract room connection error.";
+                document.getElementById('actionArea').textContent = "Contract room connection error.";
                 return;
             }
 
@@ -253,7 +272,7 @@
 
         function setupRealtimeListener() {
             document.getElementById('liveBadge').className = "text-xs bg-green-500/10 text-green-400 font-bold px-2.5 py-1 rounded-full border border-green-500/20";
-            document.getElementById('liveBadge').innerText = "Live Synced";
+            document.getElementById('liveBadge').textContent = "Live Synced";
 
             supabaseClient
                 .channel(`track-trade-${tradeId}`)
@@ -265,20 +284,20 @@
         }
 
         function renderUI(trade) {
-            document.getElementById('lblAsset').innerText = trade.asset_type;
-            document.getElementById('lblAmount').innerText = '₦' + trade.amount.toLocaleString();
-            document.getElementById('lblBuyer').innerText = trade.buyer_email;
-            document.getElementById('lblSeller').innerText = trade.seller_email;
+            document.getElementById('lblAsset').textContent = trade.asset_type || 'N/A';
+            document.getElementById('lblAmount').textContent = '₦' + (trade.amount || 0).toLocaleString();
+            document.getElementById('lblBuyer').textContent = trade.buyer_email || 'N/A';
+            document.getElementById('lblSeller').textContent = trade.seller_email || 'N/A';
 
             const actions = document.getElementById('actionArea');
             const timerContainer = document.getElementById('timerContainer');
-            actions.innerHTML = ""; 
+            actions.textContent = ""; 
             
             if (timerInterval) clearInterval(timerInterval); 
 
             const viewerEmail = (localStorage.getItem('tradescrow_user_email') || '').trim().toLowerCase();
-            const isBuyer = viewerEmail === trade.buyer_email.toLowerCase();
-            const isSeller = viewerEmail === trade.seller_email.toLowerCase();
+            const isBuyer = viewerEmail === (trade.buyer_email || '').toLowerCase();
+            const isSeller = viewerEmail === (trade.seller_email || '').toLowerCase();
 
             if (trade.status === 'pending') {
                 resetTimelineToPending();
@@ -288,11 +307,22 @@
                     const baseAmount = parseFloat(trade.amount);
                     const fee = baseAmount * 0.02;
                     const totalWithFee = baseAmount + fee;
-                    actions.innerHTML = `<button onclick="processPaystackCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow transition">Deposit Secured Escrow (₦${totalWithFee.toLocaleString()})</button>`;
+
+                    const payBtn = document.createElement('button');
+                    payBtn.className = "w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow transition";
+                    payBtn.textContent = `Deposit Secured Escrow (₦${totalWithFee.toLocaleString()})`;
+                    payBtn.onclick = processPaystackCheckout;
+                    actions.appendChild(payBtn);
                 } else if (isSeller) {
-                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">⏳ Waiting for the buyer to make deposit into escrow vault. Do not share credentials yet.</div>`;
+                    const notice = document.createElement('div');
+                    notice.className = "bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400";
+                    notice.textContent = "⏳ Waiting for the buyer to make deposit into escrow vault. Do not share credentials yet.";
+                    actions.appendChild(notice);
                 } else {
-                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Awaiting escrow payment...</div>`;
+                    const notice = document.createElement('div');
+                    notice.className = "bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400";
+                    notice.textContent = "Awaiting escrow payment...";
+                    actions.appendChild(notice);
                 }
             } 
             else if (trade.status === 'paid') {
@@ -305,57 +335,119 @@
                 if (isBuyer) {
                     const detailsAdded = (trade.seller_account_number && (trade.seller_bank_name || trade.seller_bank_code));
                     
-                    actions.innerHTML = `
-                        <div class="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-xs text-yellow-400 mb-2 font-medium">
-                            ${detailsAdded ? '✅ Seller settlement details recorded. Verify asset delivery fully before releasing.' : '⏳ Awaiting seller to configure their settlement bank payout data below.'}
-                        </div>
-                        <div class="flex gap-3">
-                            <button id="releaseFundsBtn" onclick="handleReleaseFunds()" ${!detailsAdded ? 'disabled class="flex-1 bg-gray-700 text-gray-500 font-bold py-3 px-4 rounded-xl text-sm cursor-not-allowed"' : 'class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow transition text-sm"'}>Release Funds to Seller</button>
-                            <button onclick="updateTradeStatus('disputed')" class="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold py-3 px-4 rounded-xl border border-red-500/20 transition text-sm">Raise Dispute</button>
-                        </div>`;
+                    const infoBox = document.createElement('div');
+                    infoBox.className = "bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-xs text-yellow-400 mb-2 font-medium";
+                    infoBox.textContent = detailsAdded ? '✅ Seller settlement details recorded. Verify asset delivery fully before releasing.' : '⏳ Awaiting seller to configure their settlement bank payout data below.';
+
+                    const btnRow = document.createElement('div');
+                    btnRow.className = "flex gap-3";
+
+                    const relBtn = document.createElement('button');
+                    relBtn.id = "releaseFundsBtn";
+                    relBtn.textContent = "Release Funds to Seller";
+                    if (!detailsAdded) {
+                        relBtn.disabled = true;
+                        relBtn.className = "flex-1 bg-gray-700 text-gray-500 font-bold py-3 px-4 rounded-xl text-sm cursor-not-allowed";
+                    } else {
+                        relBtn.className = "flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow transition text-sm";
+                        relBtn.onclick = handleReleaseFunds;
+                    }
+
+                    const dispBtn = document.createElement('button');
+                    dispBtn.className = "flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold py-3 px-4 rounded-xl border border-red-500/20 transition text-sm";
+                    dispBtn.textContent = "Raise Dispute";
+                    dispBtn.onclick = () => updateTradeStatus('disputed');
+
+                    btnRow.appendChild(relBtn);
+                    btnRow.appendChild(dispBtn);
+
+                    actions.appendChild(infoBox);
+                    actions.appendChild(btnRow);
                 } else if (isSeller) {
                     const dynamicBankLabel = trade.seller_account_number ? `Saved Payout Account: ${trade.seller_bank_name || 'Bank'} (${trade.seller_account_number})` : 'Configure Settlement Target Account';
 
-                    actions.innerHTML = `
-                        <div class="bg-green-600/10 border border-green-500/20 rounded-xl p-4 text-center text-xs text-green-400 font-medium mb-3">
-                            💰 Payment Confirmed inside Escrow! <br>
-                            <span class="text-gray-400 block mt-1">Drop the account credentials securely in the chat window below.</span>
-                        </div>
-                        
-                        <div class="bg-gray-950 border border-gray-800 rounded-xl p-4 space-y-3">
-                            <h4 class="text-xs font-bold text-gray-300 flex items-center justify-between">
-                                <span>🏦 ${dynamicBankLabel}</span>
-                            </h4>
-                            <div class="grid grid-cols-2 gap-2">
-                                <input id="txtSellerBank" type="text" placeholder="e.g. OPay, GTBank" class="bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-yellow-500">
-                                <input id="txtSellerNumber" type="text" maxlength="10" placeholder="10-Digit Acct No" class="bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-yellow-500">
-                            </div>
-                            <input id="txtSellerName" type="text" placeholder="Account Holder Legal Name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-yellow-500">
-                            <button onclick="submitBankDetails()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-2 rounded-lg text-xs transition">
-                                Save Settlement Details
-                            </button>
-                        </div>`;
+                    const box = document.createElement('div');
+                    box.className = "bg-green-600/10 border border-green-500/20 rounded-xl p-4 text-center text-xs text-green-400 font-medium mb-3";
+                    box.textContent = "💰 Payment Confirmed inside Escrow! Drop the account credentials securely in the chat window below.";
+
+                    const formBox = document.createElement('div');
+                    formBox.className = "bg-gray-950 border border-gray-800 rounded-xl p-4 space-y-3";
+
+                    const h4 = document.createElement('h4');
+                    h4.className = "text-xs font-bold text-gray-300 flex items-center justify-between";
+                    h4.textContent = `🏦 ${dynamicBankLabel}`;
+
+                    const grid = document.createElement('div');
+                    grid.className = "grid grid-cols-2 gap-2";
+
+                    const bInput = document.createElement('input');
+                    bInput.id = "txtSellerBank";
+                    bInput.type = "text";
+                    bInput.placeholder = "e.g. OPay, GTBank";
+                    bInput.className = "bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-yellow-500";
+
+                    const numInput = document.createElement('input');
+                    numInput.id = "txtSellerNumber";
+                    numInput.type = "text";
+                    numInput.maxLength = 10;
+                    numInput.placeholder = "10-Digit Acct No";
+                    numInput.className = "bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-yellow-500";
+
+                    grid.appendChild(bInput);
+                    grid.appendChild(numInput);
+
+                    const nameInput = document.createElement('input');
+                    nameInput.id = "txtSellerName";
+                    nameInput.type = "text";
+                    nameInput.placeholder = "Account Holder Legal Name";
+                    nameInput.className = "w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-yellow-500";
+
+                    const saveBtn = document.createElement('button');
+                    saveBtn.className = "w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-2 rounded-lg text-xs transition";
+                    saveBtn.textContent = "Save Settlement Details";
+                    saveBtn.onclick = submitBankDetails;
+
+                    formBox.appendChild(h4);
+                    formBox.appendChild(grid);
+                    formBox.appendChild(nameInput);
+                    formBox.appendChild(saveBtn);
+
+                    actions.appendChild(box);
+                    actions.appendChild(formBox);
                 } else {
-                    actions.innerHTML = `<div class="bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400">Deal funded. Inspection phase active.</div>`;
+                    const notice = document.createElement('div');
+                    notice.className = "bg-gray-950 border border-gray-700 rounded-xl p-4 text-center text-xs text-gray-400";
+                    notice.textContent = "Deal funded. Inspection phase active.";
+                    actions.appendChild(notice);
                 }
             } 
             else if (trade.status === 'released' || trade.status === 'settled_closed') {
                 setTimelineToSettled();
                 timerContainer.classList.add('hidden'); 
-                actions.innerHTML = `
-                    <div class="bg-green-500/10 border border-green-500/20 text-green-400 font-semibold p-4 rounded-xl text-center text-sm">
-                        🔒 Transaction fully verified and payouts settled.
-                        ${trade.seller_bank_name || trade.seller_bank_code ? `<p class="text-[11px] text-gray-400 font-mono mt-1">Routed to: ${trade.seller_bank_name || 'Registered Bank'} (${trade.seller_account_number})</p>` : ''}
-                    </div>`;
+                
+                const box = document.createElement('div');
+                box.className = "bg-green-500/10 border border-green-500/20 text-green-400 font-semibold p-4 rounded-xl text-center text-sm";
+                box.textContent = "🔒 Transaction fully verified and payouts settled.";
+
+                if (trade.seller_bank_name || trade.seller_bank_code) {
+                    const p = document.createElement('p');
+                    p.className = "text-[11px] text-gray-400 font-mono mt-1";
+                    p.textContent = `Routed to: ${trade.seller_bank_name || 'Registered Bank'} (${trade.seller_account_number})`;
+                    box.appendChild(p);
+                }
+                actions.appendChild(box);
             }
-          else if (trade.status === 'disputed') {
+            else if (trade.status === 'disputed') {
                 setTimelineToDisputed();
                 timerContainer.classList.add('hidden'); 
-                actions.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 font-semibold p-4 rounded-xl text-center text-sm">🛑 Hold Order Placed. System Admin reviewing submitted room chat history logs.</div>`;
+                
+                const box = document.createElement('div');
+                box.className = "bg-red-500/10 border border-red-500/20 text-red-400 font-semibold p-4 rounded-xl text-center text-sm";
+                box.textContent = "🛑 Hold Order Placed. System Admin reviewing submitted room chat history logs.";
+                actions.appendChild(box);
             }
         }
 
-        // Fixed field typo (`seller_account_name`)
         async function submitBankDetails() {
             const bankName = document.getElementById('txtSellerBank').value.trim();
             const accountNumber = document.getElementById('txtSellerNumber').value.trim();
@@ -402,7 +494,7 @@
             const clockDisplay = document.getElementById('countdownClock');
             if (!clockDisplay) return; 
             
-            let formattedPaidAt = createdAtTimestamp.replace(" ", "T");
+            let formattedPaidAt = String(createdAtTimestamp).replace(" ", "T");
             if (formattedPaidAt.includes("+")) {
                 formattedPaidAt = formattedPaidAt.split("+")[0];
             }
@@ -418,7 +510,7 @@
 
                 if (distance < 0) {
                     clearInterval(timerInterval);
-                    clockDisplay.innerText = "EXPIRED";
+                    clockDisplay.textContent = "EXPIRED";
                     clockDisplay.className = "text-red-500 font-bold";
                     
                     if (tradeDetails && tradeDetails.status === 'paid') {
@@ -431,7 +523,7 @@
                 const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-                clockDisplay.innerText = 
+                clockDisplay.textContent = 
                     String(hours).padStart(2, '0') + ":" + 
                     String(minutes).padStart(2, '0') + ":" + 
                     String(seconds).padStart(2, '0');
@@ -472,7 +564,6 @@
                     .eq('id', tradeId);
                 if (error) throw error;
 
-                // Send email notification on payment confirmation
                 if (newStatus === 'paid') {
                     try {
                         await emailjs.send("service_ld1knjm", "template_9mj8u8c", {
@@ -499,12 +590,8 @@
                 const releaseBtn = document.getElementById('releaseFundsBtn');
                 if (releaseBtn) {
                     releaseBtn.disabled = true;
-                    releaseBtn.innerHTML = `
-                        <span class="flex items-center justify-center gap-2">
-                            <span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span>
-                            Processing Instant Bank Transfer...
-                        </span>`;
-                }
+                    releaseBtn.textContent = "Processing Instant Bank Transfer...";
+        }
 
                 await new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -523,7 +610,6 @@
                         message_text: `📢 Escrow Settlement Vault Activated! ₦${tradeDetails.amount.toLocaleString()} cleared for seller routing.` 
                     }]);
 
-                // Notify seller via email
                 try {
                     await emailjs.send("service_ld1knjm", "template_9mj8u8c", {
                         to_email: tradeDetails.seller_email,
@@ -547,12 +633,12 @@
             const currentUrl = window.location.href;
 
             navigator.clipboard.writeText(currentUrl).then(() => {
-                shareBtn.innerText = "✅ Link Copied to Clipboard!";
+                shareBtn.textContent = "✅ Link Copied to Clipboard!";
                 shareBtn.classList.remove('bg-gray-700/50', 'text-gray-300', 'border-gray-600');
                 shareBtn.classList.add('bg-green-600/20', 'text-green-400', 'border-green-500/30');
 
                 setTimeout(() => {
-                    shareBtn.innerHTML = "📋 Copy Shareable Trade Link";
+                    shareBtn.textContent = "📋 Copy Shareable Trade Link";
                     shareBtn.classList.remove('bg-green-600/20', 'text-green-400', 'border-green-500/30');
                     shareBtn.classList.add('bg-gray-700/50', 'text-gray-300', 'border-gray-600');
                 }, 2500);
