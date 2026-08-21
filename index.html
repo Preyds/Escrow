@@ -107,16 +107,29 @@
                 </button>
             </form>
         </div>
-
-        <!-- Explainer Video Card -->
-        <div class="w-full bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl">
-            <h2 class="text-sm font-bold uppercase tracking-wider text-yellow-500 mb-3 flex items-center gap-2">
-                📖 How Tradescrow Works
-            </h2>
-            <div class="relative w-full aspect-video rounded-xl overflow-hidden border border-gray-700 bg-gray-950">
-                <iframe src="https://www.youtube.com/embed/4SeAcQRruh4" title="How Tradescrow Works" class="w-full h-full" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-            </div>
+<!-- Explainer Video Card (Optimized Facade) -->
+<div class="w-full bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-yellow-500 mb-3 flex items-center gap-2">
+        📖 How Tradescrow Works
+    </h2>
+    <div id="videoContainer" class="relative w-full aspect-video rounded-xl overflow-hidden border border-gray-700 bg-gray-950 cursor-pointer flex items-center justify-center group" onclick="loadYoutubeVideo()">
+        <!-- Video Poster Thumbnail -->
+        <img src="https://img.youtube.com/vi/4SeAcQRruh4/hqdefault.jpg" alt="How Tradescrow Works" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" loading="lazy">
+        <!-- Play Button Overlay -->
+        <div class="relative z-10 w-14 h-14 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition">
+            <svg class="w-6 h-6 text-gray-950 fill-current ml-1" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+            </svg>
         </div>
+    </div>
+</div>
+
+<script>
+    function loadYoutubeVideo() {
+        const container = document.getElementById('videoContainer');
+        container.innerHTML = `<iframe src="https://www.youtube.com/embed/4SeAcQRruh4?autoplay=1" title="How Tradescrow Works" class="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+    }
+</script>
     </main>
 
     <!-- Page Loader Script -->
