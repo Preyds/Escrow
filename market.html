@@ -167,8 +167,7 @@
         <p class="text-xs text-gray-400 mb-2 font-mono">Click anywhere to close preview</p>
         <img id="lightboxImage" src="" class="max-w-full max-h-[85vh] rounded-2xl border border-gray-800 object-contain shadow-2xl">
     </div>
-
-    <script>
+        <script>
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -180,14 +179,23 @@
         function closeNewListingModal() { document.getElementById('listingModal').classList.add('hidden'); }
         function toggleFilterModal() { document.getElementById('filterModal').classList.toggle('hidden'); }
 
+        // Custom Safe Toast Notification System
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
             
             toast.className = `${bgColor} text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-xl transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto flex items-center gap-2`;
-            toast.innerHTML = `<span>${type === 'success' ? '✓' : '⚠️'}</span> <span>${message}</span>`;
             
+            const iconSpan = document.createElement('span');
+            iconSpan.textContent = type === 'success' ? '✓' : '⚠️';
+
+            const msgSpan = document.createElement('span');
+            msgSpan.textContent = message;
+
+            toast.appendChild(iconSpan);
+            toast.appendChild(msgSpan);
+
             container.appendChild(toast);
             setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
             setTimeout(() => {
@@ -220,7 +228,11 @@
 
             if (error) {
                 showToast("Database error: " + error.message, "error");
-                gridContainer.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center col-span-full">Database Sync Error: ${error.message}</div>`;
+                gridContainer.textContent = "";
+                const errDiv = document.createElement('div');
+                errDiv.className = "bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center col-span-full";
+                errDiv.textContent = `Database Sync Error: ${error.message}`;
+                gridContainer.appendChild(errDiv);
                 return;
             }
 
@@ -264,78 +276,142 @@
 
         function renderGrid(data) {
             const gridContainer = document.getElementById('listingsGrid');
+            gridContainer.textContent = "";
 
             if (!data || data.length === 0) {
-                gridContainer.innerHTML = `
-                    <div class="text-center py-12 bg-gray-900 border border-gray-800 rounded-2xl col-span-full px-4">
-                        <p class="text-sm font-semibold text-gray-300">No listings found</p>
-                        <p class="text-xs text-gray-500 mt-1">Try resetting filters or post a new account!</p>
-                    </div>`;
+                const emptyBox = document.createElement('div');
+                emptyBox.className = "text-center py-12 bg-gray-900 border border-gray-800 rounded-2xl col-span-full px-4";
+
+                const p1 = document.createElement('p');
+                p1.className = "text-sm font-semibold text-gray-300";
+                p1.textContent = "No listings found";
+
+                const p2 = document.createElement('p');
+                p2.className = "text-xs text-gray-500 mt-1";
+                p2.textContent = "Try resetting filters or post a new account!";
+
+                emptyBox.appendChild(p1);
+                emptyBox.appendChild(p2);
+                gridContainer.appendChild(emptyBox);
                 return;
             }
 
-            gridContainer.innerHTML = "";
-
             data.forEach(item => {
                 const displayImage = item.image_url ? item.image_url : 'https://images.unsplash.com/photo-1612287230202-1bf1d85d1bdf?w=500&auto=format&fit=crop&q=60';
-                const levelBadge = item.level ? `<span class="bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-bold px-2 py-0.5 rounded-md text-[10px]">Lvl ${item.level}</span>` : '';
                 
-                // Process rare item tags pill elements
-                let tagsHtml = '';
-                if (item.tags) {
-                    const tagList = item.tags.split(',').slice(0, 4);
-                    tagsHtml = `<div class="flex flex-wrap gap-1 mt-2">` + 
-                        tagList.map(t => `<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-[9px] font-semibold">${t.trim()}</span>`).join('') +
-                        `</div>`;
-                }
-
                 const card = document.createElement('div');
                 card.className = "bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden flex flex-col justify-between shadow-lg hover:border-gray-700 transition";
-                card.innerHTML = `
-                    <!-- Card Image with Batman Store Style Overlays -->
-                    <div class="h-48 w-full bg-gray-950 relative overflow-hidden border-b border-gray-800 group cursor-pointer" onclick="openImageLightbox('${displayImage}')">
-                        <img src="${displayImage}" alt="Account Preview" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
-                        
-                        <div class="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-yellow-500 text-gray-950 uppercase tracking-wider">${item.platform}</span>
-                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-md bg-purple-500/80 text-white uppercase">Premium</span>
-                        </div>
 
-                        <div class="absolute bottom-2.5 right-2.5">
-                            ${levelBadge}
-                        </div>
-                    </div>
+                // Card Image Overlay Container
+                const imgContainer = document.createElement('div');
+                imgContainer.className = "h-48 w-full bg-gray-950 relative overflow-hidden border-b border-gray-800 group cursor-pointer";
+                imgContainer.onclick = () => openImageLightbox(displayImage);
 
-                    <!-- Details Section -->
-                    <div class="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-[10px] text-gray-500 font-mono">ID: ${item.id ? item.id.substring(0,8) : 'FF-STORE'}</span>
-                                <span class="text-sm font-extrabold text-cyan-400">₦${parseFloat(item.price).toLocaleString()}</span>
-                            </div>
-                            
-                            <h4 class="text-sm font-bold text-white leading-snug break-words">${item.title}</h4>
+                const img = document.createElement('img');
+                img.src = displayImage;
+                img.alt = "Account Preview";
+                img.className = "w-full h-full object-cover group-hover:scale-105 transition duration-300";
+                imgContainer.appendChild(img);
 
-                            ${tagsHtml}
-                        </div>
+                // Top Badges
+                const topBadges = document.createElement('div');
+                topBadges.className = "absolute top-2.5 left-2.5 flex items-center gap-1.5";
 
-                        <!-- Actions & Escrow CTA -->
-                        <div class="pt-3 border-t border-gray-800 space-y-2">
-                            <button onclick="contactSeller('${item.contact_handle}', '${item.seller_email}', '${item.platform}', '${item.price}', \`${item.title.replace(/'/g, "\\'")}\`)" 
-                               class="w-full bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-xl font-bold text-xs transition flex justify-center items-center gap-1.5 shadow-sm">
-                               💬 BUY ON WHATSAPP
-                            </button>
-                            <a href="create.html?seller=${encodeURIComponent(item.seller_email)}&amount=${item.price}&type=${encodeURIComponent(item.platform)}" 
-                               class="w-full block bg-gray-950 border border-gray-800 hover:bg-yellow-500 hover:text-gray-950 text-gray-300 text-center py-2 rounded-xl font-bold text-xs transition">
-                               🔒 Buy via Escrow Room
-                            </a>
-                        </div>
-                    </div>
-                `;
+                const platformBadge = document.createElement('span');
+                platformBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-yellow-500 text-gray-950 uppercase tracking-wider";
+                platformBadge.textContent = item.platform || 'Asset';
+
+                const premBadge = document.createElement('span');
+                premBadge.className = "text-[9px] font-bold px-2 py-0.5 rounded-md bg-purple-500/80 text-white uppercase";
+                premBadge.textContent = "Premium";
+
+                topBadges.appendChild(platformBadge);
+                topBadges.appendChild(premBadge);
+                imgContainer.appendChild(topBadges);
+
+                // Level Badge
+                if (item.level) {
+                    const levelContainer = document.createElement('div');
+                    levelContainer.className = "absolute bottom-2.5 right-2.5";
+                    
+                    const levelSpan = document.createElement('span');
+                    levelSpan.className = "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-bold px-2 py-0.5 rounded-md text-[10px]";
+                    levelSpan.textContent = `Lvl ${item.level}`;
+                    
+                    levelContainer.appendChild(levelSpan);
+                    imgContainer.appendChild(levelContainer);
+                }
+
+                card.appendChild(imgContainer);
+
+                // Details Section
+                const details = document.createElement('div');
+                details.className = "p-4 space-y-2.5 flex-1 flex flex-col justify-between";
+
+                const topDetails = document.createElement('div');
+
+                const row1 = document.createElement('div');
+                row1.className = "flex justify-between items-center mb-1";
+
+                const idSpan = document.createElement('span');
+                idSpan.className = "text-[10px] text-gray-500 font-mono";
+                idSpan.textContent = `ID: ${item.id ? item.id.substring(0,8) : 'FF-STORE'}`;
+
+                const priceSpan = document.createElement('span');
+                priceSpan.className = "text-sm font-extrabold text-cyan-400";
+                priceSpan.textContent = `₦${parseFloat(item.price || 0).toLocaleString()}`;
+
+                row1.appendChild(idSpan);
+                row1.appendChild(priceSpan);
+
+                const titleH4 = document.createElement('h4');
+                titleH4.className = "text-sm font-bold text-white leading-snug break-words";
+                titleH4.textContent = item.title || 'Untitled Asset';
+
+                topDetails.appendChild(row1);
+                topDetails.appendChild(titleH4);
+
+                // Process rare item tags
+                if (item.tags) {
+                    const tagsDiv = document.createElement('div');
+                    tagsDiv.className = "flex flex-wrap gap-1 mt-2";
+                    const tagList = item.tags.split(',').slice(0, 4);
+
+                    tagList.forEach(t => {
+                        const tSpan = document.createElement('span');
+                        tSpan.className = "bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-[9px] font-semibold";
+                        tSpan.textContent = t.trim();
+                        tagsDiv.appendChild(tSpan);
+                    });
+                    topDetails.appendChild(tagsDiv);
+                }
+
+                details.appendChild(topDetails);
+
+                // Actions & Escrow CTA
+                const ctaDiv = document.createElement('div');
+                ctaDiv.className = "pt-3 border-t border-gray-800 space-y-2";
+
+                const waBtn = document.createElement('button');
+                waBtn.className = "w-full bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-xl font-bold text-xs transition flex justify-center items-center gap-1.5 shadow-sm";
+                waBtn.textContent = "💬 BUY ON WHATSAPP";
+                waBtn.onclick = () => contactSeller(item.contact_handle, item.seller_email, item.platform, item.price, item.title);
+
+                const escrowLink = document.createElement('a');
+                escrowLink.className = "w-full block bg-gray-950 border border-gray-800 hover:bg-yellow-500 hover:text-gray-950 text-gray-300 text-center py-2 rounded-xl font-bold text-xs transition";
+                escrowLink.href = `create.html?seller=${encodeURIComponent(item.seller_email || '')}&amount=${encodeURIComponent(item.price || 0)}&type=${encodeURIComponent(item.platform || '')}`;
+                escrowLink.textContent = "🔒 Buy via Escrow Room";
+
+                ctaDiv.appendChild(waBtn);
+                ctaDiv.appendChild(escrowLink);
+                details.appendChild(ctaDiv);
+
+                card.appendChild(details);
                 gridContainer.appendChild(card);
             });
         }
-                async function handleCreateListing(e) {
+
+        async function handleCreateListing(e) {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
             
@@ -355,7 +431,7 @@
             }
 
             submitBtn.disabled = true;
-            submitBtn.innerText = "Publishing Listing...";
+            submitBtn.textContent = "Publishing Listing...";
 
             let imageUrl = null;
 
@@ -371,7 +447,7 @@
                 if (uploadError) {
                     showToast("Storage error: " + uploadError.message, "error");
                     submitBtn.disabled = false;
-                    submitBtn.innerText = "Post Advertisement";
+                    submitBtn.textContent = "Post Advertisement";
                     return;
                 }
 
@@ -397,7 +473,7 @@
                 }]);
 
             submitBtn.disabled = false;
-            submitBtn.innerText = "Post Advertisement";
+            submitBtn.textContent = "Post Advertisement";
 
             if (error) {
                 showToast("Error posting ad: " + error.message, "error");
@@ -411,8 +487,8 @@
         }
 
         async function contactSeller(phone, email, platform, price, title) {
-            const formattedPrice = parseFloat(price).toLocaleString();
-            const textMsg = `Hello! I saw your listing on Tradescrow Store. I am interested in buying your ${platform} Account ("${title}") listed for ₦${formattedPrice}. Let's negotiate and open our escrow trade room!`;
+            const formattedPrice = parseFloat(price || 0).toLocaleString();
+            const textMsg = `Hello! I saw your listing on Tradescrow Store. I am interested in buying your ${platform || 'Asset'} Account ("${title || ''}") listed for ₦${formattedPrice}. Let's negotiate and open our escrow trade room!`;
             
             try {
                 await emailjs.send("service_ld1knjm", "template_9mj8u8c", {
@@ -425,7 +501,7 @@
                 console.error("Email notification error:", err);
             }
 
-            const cleanPhone = phone.replace(/\+/g, '').trim(); 
+            const cleanPhone = (phone || '').replace(/\+/g, '').trim(); 
             const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(textMsg)}`;
             window.open(whatsappUrl, '_blank');
         }
@@ -441,7 +517,7 @@
             fetchMarketplaceListings();
         }
 
-        fetchMarketplaceListings();
-    </script>
+        fetchMarketplaceListings();            
+       </script>
 </body>
 </html>
