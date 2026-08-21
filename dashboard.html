@@ -7,163 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <style>
-        /* Custom keyframes for a clean, elastic popping entry effect */
-        @keyframes popInEffect {
-            0% { 
-                transform: scale(0.88); 
-                opacity: 0; 
-            }
-            70% { 
-                transform: scale(1.03); 
-                opacity: 0.9; 
-            }
-            100% { 
-                transform: scale(1); 
-                opacity: 1; 
-            }
-        }
-
-        .animate-pop {
-            animation: popInEffect 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-    </style>
-</head>
-<body class="bg-gray-900 text-gray-100 font-sans min-h-screen pb-12">
-
-    <!-- Navigation Header -->
-    <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold text-yellow-500 tracking-wide">🎮 Dashboard</h1>
-            <div class="flex items-center gap-4">
-                <span id="userBadge" class="text-xs text-gray-400 border border-gray-700 px-3 py-1 rounded-xl bg-gray-950 font-mono">...</span>
-                <button onclick="handleLogout()" class="text-xs text-red-400 hover:text-red-500 font-semibold transition">Logout</button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- UPDATED: 3-Column Mobile App Navigation Bar -->
-    <div class="max-w-4xl mx-auto px-4 mt-6 grid grid-cols-3 gap-1.5 text-[11px] sm:text-xs">
-        <a href="dashboard.html" class="bg-gray-800 border border-yellow-500/40 text-yellow-500 text-center py-2.5 rounded-xl font-bold shadow-md">
-            💼 Escrow Trades
-        </a>
-        <a href="market.html" class="bg-gray-800/50 hover:bg-gray-800 text-gray-400 text-center py-2.5 rounded-xl font-bold border border-gray-700 transition">
-            🛒 Marketplace
-        </a>
-        <a href="chat.html" class="bg-gray-800/50 hover:bg-gray-800 text-gray-400 text-center py-2.5 rounded-xl font-bold border border-gray-700 transition">
-            💬 Global Chat
-        </a>
-    </div>
-
-    <!-- Sequential Popping Testimony Panel Container -->
-    <div class="max-w-4xl mx-auto px-4 mt-6 h-[46px] flex justify-center items-center">
-        <div id="testimonyBox" class="bg-gray-800/40 border border-gray-700/50 rounded-xl px-5 py-2.5 text-xs flex items-center gap-2.5 w-full max-w-lg shadow-sm animate-pop">
-            <span id="testimonyEmoji" class="text-base select-none">🤝</span>
-            <p class="text-gray-300 flex-1 truncate">
-                <span id="testimonyText">"Exchanged my IG page in 5 mins safely!"</span> 
-                <span id="testimonyAuthor" class="text-gray-500 font-medium ml-1.5">- @chidi_crypto</span>
-            </p>
-        </div>
-    </div>
-
-    <!-- Main Workspace Dashboard content panel -->
-    <main class="max-w-4xl mx-auto px-4 mt-6">
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h2 class="text-lg font-bold text-white">Your Escrow Agreements</h2>
-                <p class="text-xs text-gray-400">Track incoming and outgoing digital asset transactions.</p>
-            </div>
-            <a href="create.html" class="bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg">
-                + New Contract
-            </a>
-        </div>
-
-        <!-- Dynamic List Container Box -->
-        <div id="contractsList" class="space-y-4">
-            <div class="text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl">
-                <span class="animate-spin inline-block w-6 h-6 border-2 border-yellow-500 border-t-transparent rounded-full mb-2"></span>
-                <p class="text-xs text-gray-400">Querying live contract data registry...</p>
-            </div>
-        </div>
-    </main>
-
-    <script>
-        const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        let activeUser = null;
-
-        // --- Testimony Databank & Animation Engine ---
-        const testimonials = [
-            { emoji: "🤝", text: '"Exchanged my IG page in 5 mins safely!"', author: "- @chidi_crypto" },
-            { emoji: "🔒", text: '"The escrow lock mechanism is bulletproof."', author: "- @olu_dev" },
-            { emoji: "🎮", text: '"Safest P2P account portal in Nigeria ₦"', author: "- @bisi_trades" },
-            { emoji: "😁", text: '"Saved me from a notorious online scammer today."', author: "- @tunde_X" }
-        ];
-        
-        let currentTestimonyIndex = 0;
-        const testimonyBox = document.getElementById('testimonyBox');
-        const testimonyEmoji = document.getElementById('testimonyEmoji');
-        const testimonyText = document.getElementById('testimonyText');
-        const testimonyAuthor = document.getElementById('testimonyAuthor');
-
-        function cycleTestimonials() {
-            testimonyBox.classList.remove('animate-pop');
-            void testimonyBox.offsetWidth; // Force Reflow
-            
-            currentTestimonyIndex = (currentTestimonyIndex + 1) % testimonials.length;
-            const currentItem = testimonials[currentTestimonyIndex];
-            
-            testimonyEmoji.innerText = currentItem.emoji;
-            testimonyText.innerText = currentItem.text;
-            testimonyAuthor.innerText = currentItem.author;
-            
-            testimonyBox.classList.add('animate-pop');
-        }
-
-        setInterval(cycleTestimonials, 4000);
-
-        // --- Secure Session Check & Data Load Engine ---
-        async function checkSecureAuth() {
-            const { data: { session }, error } = await supabaseClient.auth.getSession();
-
-            if (error || !session) {
-                window.location.href = 'index.html';
-                return;
-            }
-
-            activeUser = session.user.email;
-            document.getElementById('userBadge').innerText = activeUser;
-
-            fetchUserContracts();
-        }
-
-        async function fetchUserContracts() {
-            if (!activeUser) return;
-            const listContainer = document.getElementById('contractsList');
-
-            const { data, error } = await supabaseClient
-                .from('trade')
-                .select('*')
-                .or(`buyer_email.eq.${activeUser},seller_email.eq.${activeUser}`)
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                listContainer.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center">Sync Error: ${error.message}</div>`;
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                listContainer.innerHTML = `
-                    <div class="text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl px-4">
-                        <p class="text-sm font-semibold text-gray-300">No active contracts found</p>
-                        <p class="text-xs text-gray-500 mt-1 mb-4">You haven't initialized or joined any escrow deals yet.</p>
-                        <a href="create.html" class="inline-block bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs px-4 py-2 rounded-xl border border-gray-600 transition">Create Your First Contract</a>
-                    </div>`;
-                return;
-            }
-
+    
             listContainer.innerHTML = ""; 
             
             data.forEach(trade => {
@@ -192,7 +36,172 @@
                         <span class="text-sm font-bold text-green-400">₦${trade.amount.toLocaleString()}</span>
                         <span class="text-xs">${statusBadge}</span>
                     </div>
-                `;
+                    <script>
+        const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let activeUser = null;
+
+        // --- Testimony Databank & Animation Engine ---
+        const testimonials = [
+            { emoji: "🤝", text: '"Exchanged my IG page in 5 mins safely!"', author: "- @chidi_crypto" },
+            { emoji: "🔒", text: '"The escrow lock mechanism is bulletproof."', author: "- @olu_dev" },
+            { emoji: "🎮", text: '"Safest P2P account portal in Nigeria ₦"', author: "- @bisi_trades" },
+            { emoji: "😁", text: '"Saved me from a notorious online scammer today."', author: "- @tunde_X" }
+        ];
+        
+        let currentTestimonyIndex = 0;
+        const testimonyBox = document.getElementById('testimonyBox');
+        const testimonyEmoji = document.getElementById('testimonyEmoji');
+        const testimonyText = document.getElementById('testimonyText');
+        const testimonyAuthor = document.getElementById('testimonyAuthor');
+
+        function cycleTestimonials() {
+            testimonyBox.classList.remove('animate-pop');
+            void testimonyBox.offsetWidth; // Force Reflow
+            
+            currentTestimonyIndex = (currentTestimonyIndex + 1) % testimonials.length;
+            const currentItem = testimonials[currentTestimonyIndex];
+            
+            testimonyEmoji.textContent = currentItem.emoji;
+            testimonyText.textContent = currentItem.text;
+            testimonyAuthor.textContent = currentItem.author;
+            
+            testimonyBox.classList.add('animate-pop');
+        }
+
+        setInterval(cycleTestimonials, 4000);
+
+        // --- Secure Session Check & Data Load Engine ---
+        async function checkSecureAuth() {
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
+
+            if (error || !session) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            activeUser = session.user.email;
+            document.getElementById('userBadge').textContent = activeUser;
+
+            fetchUserContracts();
+        }
+
+        async function fetchUserContracts() {
+            if (!activeUser) return;
+            const listContainer = document.getElementById('contractsList');
+
+            const { data, error } = await supabaseClient
+                .from('trade')
+                .select('*')
+                .or(`buyer_email.eq.${activeUser},seller_email.eq.${activeUser}`)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                listContainer.textContent = "";
+                const errDiv = document.createElement('div');
+                errDiv.className = "bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center";
+                errDiv.textContent = `Sync Error: ${error.message}`;
+                listContainer.appendChild(errDiv);
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                listContainer.textContent = "";
+                const emptyCard = document.createElement('div');
+                emptyCard.className = "text-center py-12 bg-gray-800 border border-gray-700 rounded-2xl px-4";
+                
+                const titlePara = document.createElement('p');
+                titlePara.className = "text-sm font-semibold text-gray-300";
+                titlePara.textContent = "No active contracts found";
+
+                const descPara = document.createElement('p');
+                descPara.className = "text-xs text-gray-500 mt-1 mb-4";
+                descPara.textContent = "You haven't initialized or joined any escrow deals yet.";
+
+                const createBtn = document.createElement('a');
+                createBtn.href = "create.html";
+                createBtn.className = "inline-block bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs px-4 py-2 rounded-xl border border-gray-600 transition";
+                createBtn.textContent = "Create Your First Contract";
+
+                emptyCard.appendChild(titlePara);
+                emptyCard.appendChild(descPara);
+                emptyCard.appendChild(createBtn);
+                listContainer.appendChild(emptyCard);
+                return;
+            }
+
+            listContainer.textContent = ""; 
+            
+            data.forEach(trade => {
+                const isBuyer = trade.buyer_email.toLowerCase() === activeUser.toLowerCase();
+                
+                const card = document.createElement('div');
+                card.className = "bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-md hover:border-gray-600 transition cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4";
+                card.onclick = () => window.location.href = `room.html?id=${trade.id}`;
+                
+                // Left Column: Asset info and partner email
+                const leftCol = document.createElement('div');
+                leftCol.className = "space-y-1";
+
+                const titleRow = document.createElement('div');
+                titleRow.className = "flex items-center gap-2";
+
+                const assetHeading = document.createElement('h3');
+                assetHeading.className = "font-bold text-white text-sm";
+                assetHeading.textContent = trade.asset_type;
+
+                const roleBadge = document.createElement('span');
+                roleBadge.className = isBuyer 
+                    ? "bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md"
+                    : "bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md";
+                roleBadge.textContent = isBuyer ? "Buyer" : "Seller";
+
+                titleRow.appendChild(assetHeading);
+                titleRow.appendChild(roleBadge);
+
+                const partnerPara = document.createElement('p');
+                partnerPara.className = "text-xs text-gray-400 font-mono break-all";
+                partnerPara.textContent = `Partner: ${isBuyer ? trade.seller_email : trade.buyer_email}`;
+
+                leftCol.appendChild(titleRow);
+                leftCol.appendChild(partnerPara);
+
+                // Right Column: Price and Status
+                const rightCol = document.createElement('div');
+                rightCol.className = "flex sm:flex-col justify-between items-end w-full sm:w-auto border-t sm:border-0 border-gray-700/50 pt-2 sm:pt-0";
+
+                const amountSpan = document.createElement('span');
+                amountSpan.className = "text-sm font-bold text-green-400";
+                amountSpan.textContent = `₦${trade.amount ? trade.amount.toLocaleString() : '0'}`;
+
+                const statusSpan = document.createElement('span');
+                statusSpan.className = "text-xs";
+
+                if (trade.status === 'pending') {
+                    statusSpan.className += " text-yellow-500 font-medium";
+                    statusSpan.textContent = "Awaiting Deposit";
+                } else if (trade.status === 'paid') {
+                    statusSpan.className += " text-green-400 font-medium animate-pulse";
+                    statusSpan.textContent = "🔒 Escrow Locked";
+                } else if (trade.status === 'released') {
+                    statusSpan.className += " text-gray-400 font-medium";
+                    statusSpan.textContent = "Settle Closed";
+                } else if (trade.status === 'disputed') {
+                    statusSpan.className += " text-red-400 font-bold";
+                    statusSpan.textContent = "🛑 Disputed Order";
+                } else {
+                    statusSpan.className += " text-gray-400 font-medium";
+                    statusSpan.textContent = trade.status || "Unknown";
+                }
+
+                rightCol.appendChild(amountSpan);
+                rightCol.appendChild(statusSpan);
+
+                card.appendChild(leftCol);
+                card.appendChild(rightCol);
+
                 listContainer.appendChild(card);
             });
         }
@@ -203,6 +212,6 @@
         }
 
         checkSecureAuth();
-    </script>
+                </script>
 </body>
 </html>
