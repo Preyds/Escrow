@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
+    <!-- Preconnect to CDNs for faster DNS lookup & TLS handshakes -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+
+    <!-- Google tag (gtag.js) - Non-blocking async load -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-K4KF9NJZ74"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -10,6 +14,7 @@
 
       gtag('config', 'G-K4KF9NJZ74');
     </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tradescrow - Secure Gateway</title>
@@ -17,10 +22,8 @@
     <!-- Compiled Tailwind CSS Stylesheet -->
     <link rel="stylesheet" href="style.css">
     
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Three.js Library for 3D Interaction -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+    <!-- Deferred Supabase SDK to prevent main-thread blocking -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 
     <style>
         /* Custom keyframes to simulate continuous, non-linear random floating movement */
@@ -114,8 +117,8 @@
                 📖 How Tradescrow Works
             </h2>
             <div id="videoContainer" class="relative w-full aspect-video min-h-[200px] rounded-xl overflow-hidden border border-gray-700 bg-gray-950 cursor-pointer flex items-center justify-center group" onclick="loadYoutubeVideo()">
-                <!-- Video Poster Thumbnail with Explicit Dimensions -->
-                <img src="https://img.youtube.com/vi/4SeAcQRruh4/hqdefault.jpg" alt="How Tradescrow Works" width="480" height="270" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" loading="lazy">
+                <!-- Localized Video Poster to satisfy efficient caching lifetime audit -->
+                <img src="poster.webp" alt="How Tradescrow Works" width="480" height="270" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" loading="lazy">
                 <!-- Play Button Overlay -->
                 <div class="relative z-10 w-14 h-14 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition">
                     <svg class="w-6 h-6 text-gray-950 fill-current ml-1" viewBox="0 0 24 24">
@@ -161,177 +164,204 @@
         window.addEventListener('load', hidePreloader);
     </script>
 
-    <!-- Interactive 3D Rotation Script -->
+    <!-- Dynamic Three.js Lazy Loading & Initialization -->
     <script>
-        const canvas = document.getElementById('logo3dCanvas');
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
-        camera.position.z = 3.2;
+        function init3dLogo() {
+            const canvas = document.getElementById('logo3dCanvas');
+            if (!canvas || typeof THREE === 'undefined') return;
 
-        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-        renderer.setSize(176, 176);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+            camera.position.z = 3.2;
 
-        // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-        scene.add(ambientLight);
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+            renderer.setSize(176, 176);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-        const goldLight = new THREE.PointLight(0xeab308, 2, 10);
-        goldLight.position.set(2, 2, 3);
-        scene.add(goldLight);
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+            scene.add(ambientLight);
 
-        // Load Logo Texture
-        const textureLoader = new THREE.TextureLoader();
-        const texture = textureLoader.load('logo.webp');
+            const goldLight = new THREE.PointLight(0xeab308, 2, 10);
+            goldLight.position.set(2, 2, 3);
+            scene.add(goldLight);
 
-        // Create 3D Shield Mesh
-        const geometry = new THREE.PlaneGeometry(2.1, 2.1);
-        const material = new THREE.MeshStandardMaterial({
-            map: texture,
-            transparent: true,
-            side: THREE.DoubleSide,
-            roughness: 0.3,
-            metalness: 0.4
-        });
+            // Load Logo Texture
+            const textureLoader = new THREE.TextureLoader();
+            const texture = textureLoader.load('logo.webp');
 
-        const logoMesh = new THREE.Mesh(geometry, material);
-        scene.add(logoMesh);
+            // Create 3D Shield Mesh
+            const geometry = new THREE.PlaneGeometry(2.1, 2.1);
+            const material = new THREE.MeshStandardMaterial({
+                map: texture,
+                transparent: true,
+                side: THREE.DoubleSide,
+                roughness: 0.3,
+                metalness: 0.4
+            });
 
-        // Interaction Variables
-        let isDragging = false;
-        let previousMousePosition = { x: 0, y: 0 };
-        let targetRotationY = 0;
-        let targetRotationX = 0;
+            const logoMesh = new THREE.Mesh(geometry, material);
+            scene.add(logoMesh);
 
-        function getPos(e) {
-            return {
-                x: e.touches ? e.touches[0].clientX : e.clientX,
-                y: e.touches ? e.touches[0].clientY : e.clientY
-            };
-        }
+            // Interaction Variables
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            let targetRotationY = 0;
+            let targetRotationX = 0;
 
-        function startDrag(e) {
-            isDragging = true;
-            const pos = getPos(e);
-            previousMousePosition = { x: pos.x, y: pos.y };
-        }
-
-        function drag(e) {
-            if (!isDragging) return;
-            const pos = getPos(e);
-            const deltaX = pos.x - previousMousePosition.x;
-            const deltaY = pos.y - previousMousePosition.y;
-
-            targetRotationY += deltaX * 0.015;
-            targetRotationX += deltaY * 0.015;
-
-            previousMousePosition = { x: pos.x, y: pos.y };
-        }
-
-        function stopDrag() {
-            isDragging = false;
-        }
-
-        // Event Listeners (Mouse & Mobile Touch)
-        canvas.addEventListener('mousedown', startDrag);
-        window.addEventListener('mousemove', drag);
-        window.addEventListener('mouseup', stopDrag);
-
-        canvas.addEventListener('touchstart', startDrag);
-        window.addEventListener('touchmove', drag);
-        window.addEventListener('touchend', stopDrag);
-
-        // Smooth Animation Loop
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Inertia rotation smoothing
-            logoMesh.rotation.y += (targetRotationY - logoMesh.rotation.y) * 0.1;
-            logoMesh.rotation.x += (targetRotationX - logoMesh.rotation.x) * 0.1;
-
-            // Slow passive float rotation when user isn't holding it
-            if (!isDragging) {
-                targetRotationY += 0.005;
-                targetRotationX *= 0.95; // Return pitch gently back to straight
+            function getPos(e) {
+                return {
+                    x: e.touches ? e.touches[0].clientX : e.clientX,
+                    y: e.touches ? e.touches[0].clientY : e.clientY
+                };
             }
 
-            renderer.render(scene, camera);
+            function startDrag(e) {
+                isDragging = true;
+                const pos = getPos(e);
+                previousMousePosition = { x: pos.x, y: pos.y };
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+                const pos = getPos(e);
+                const deltaX = pos.x - previousMousePosition.x;
+                const deltaY = pos.y - previousMousePosition.y;
+
+                targetRotationY += deltaX * 0.015;
+                targetRotationX += deltaY * 0.015;
+
+                previousMousePosition = { x: pos.x, y: pos.y };
+            }
+
+            function stopDrag() {
+                isDragging = false;
+            }
+
+            // Event Listeners (Mouse & Mobile Touch)
+            canvas.addEventListener('mousedown', startDrag);
+            window.addEventListener('mousemove', drag);
+            window.addEventListener('mouseup', stopDrag);
+
+            canvas.addEventListener('touchstart', startDrag);
+            window.addEventListener('touchmove', drag);
+            window.addEventListener('touchend', stopDrag);
+
+            // Smooth Animation Loop
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Inertia rotation smoothing
+                logoMesh.rotation.y += (targetRotationY - logoMesh.rotation.y) * 0.1;
+                logoMesh.rotation.x += (targetRotationX - logoMesh.rotation.x) * 0.1;
+
+                // Slow passive float rotation when user isn't holding it
+                if (!isDragging) {
+                    targetRotationY += 0.005;
+                    targetRotationX *= 0.95; // Return pitch gently back to straight
+                }
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
         }
 
-        animate();
+        // Dynamically inject Three.js script after DOM parsing to eliminate Unused JS audit warnings
+        document.addEventListener('DOMContentLoaded', () => {
+            const threeScript = document.createElement('script');
+            threeScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+            threeScript.defer = true;
+            threeScript.onload = () => {
+                init3dLogo();
+            };
+            document.body.appendChild(threeScript);
+        });
     </script>
 
     <!-- Supabase Auth Script -->
     <script>
-        const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        let currentStep = 'email'; 
-
-        const authForm = document.getElementById('authForm');
-        const emailSection = document.getElementById('emailSection');
-        const otpSection = document.getElementById('otpSection');
-        const authBtn = document.getElementById('authBtn');
-
-        async function checkSession() {
-            const { data } = await supabaseClient.auth.getSession();
-            if (data.session) {
-                showPreloader("Redirecting to Dashboard...");
-                window.location.href = 'dashboard.html';
+        document.addEventListener('DOMContentLoaded', () => {
+            const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
+            
+            let supabaseClient;
+            if (typeof supabase !== 'undefined') {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             }
-        }
-        checkSession();
 
-        authForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('userEmail').value.trim().toLowerCase();
+            let currentStep = 'email'; 
 
-            if (currentStep === 'email') {
-                authBtn.disabled = true;
-                authBtn.textContent = "Sending Code...";
+            const authForm = document.getElementById('authForm');
+            const emailSection = document.getElementById('emailSection');
+            const otpSection = document.getElementById('otpSection');
+            const authBtn = document.getElementById('authBtn');
 
-                const { error } = await supabaseClient.auth.signInWithOtp({ 
-                    email: email,
-                    options: {
-                        shouldCreateUser: true
-                    }
-                });
-
-                if (error) {
-                    alert("Error sending code: " + error.message);
-                    authBtn.disabled = false;
-                    authBtn.textContent = "Send Secret Code →";
-                } else {
-                    emailSection.classList.add('hidden');
-                    otpSection.classList.remove('hidden');
-                    authBtn.disabled = false;
-                    authBtn.textContent = "Verify & Access Workspace →";
-                    currentStep = 'otp';
-                }
-
-            } else if (currentStep === 'otp') {
-                const token = document.getElementById('otpToken').value.trim();
-                authBtn.disabled = true;
-                authBtn.textContent = "Verifying Code...";
-
-                const { data, error } = await supabaseClient.auth.verifyOtp({
-                    email: email,
-                    token: token,
-                    type: 'email'
-                });
-
-                if (error) {
-                    alert("Invalid or expired code. Please try again. " + error.message);
-                    authBtn.disabled = false;
-                    authBtn.textContent = "Verify & Access Workspace →";
-                } else {
-                    showPreloader("Access Granted! Loading Workspace...");
+            async function checkSession() {
+                if (!supabaseClient) return;
+                const { data } = await supabaseClient.auth.getSession();
+                if (data && data.session) {
+                    showPreloader("Redirecting to Dashboard...");
                     window.location.href = 'dashboard.html';
                 }
             }
+            
+            // Wait for Supabase deferred load
+            window.addEventListener('load', checkSession);
+
+            authForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!supabaseClient) {
+                    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                }
+
+                const email = document.getElementById('userEmail').value.trim().toLowerCase();
+
+                if (currentStep === 'email') {
+                    authBtn.disabled = true;
+                    authBtn.textContent = "Sending Code...";
+
+                    const { error } = await supabaseClient.auth.signInWithOtp({ 
+                        email: email,
+                        options: {
+                            shouldCreateUser: true
+                        }
+                    });
+
+                    if (error) {
+                        alert("Error sending code: " + error.message);
+                        authBtn.disabled = false;
+                        authBtn.textContent = "Send Secret Code →";
+                    } else {
+                        emailSection.classList.add('hidden');
+                        otpSection.classList.remove('hidden');
+                        authBtn.disabled = false;
+                        authBtn.textContent = "Verify & Access Workspace →";
+                        currentStep = 'otp';
+                    }
+
+                } else if (currentStep === 'otp') {
+                    const token = document.getElementById('otpToken').value.trim();
+                    authBtn.disabled = true;
+                    authBtn.textContent = "Verifying Code...";
+
+                    const { data, error } = await supabaseClient.auth.verifyOtp({
+                        email: email,
+                        token: token,
+                        type: 'email'
+                    });
+
+                    if (error) {
+                        alert("Invalid or expired code. Please try again. " + error.message);
+                        authBtn.disabled = false;
+                        authBtn.textContent = "Verify & Access Workspace →";
+                    } else {
+                        showPreloader("Access Granted! Loading Workspace...");
+                        window.location.href = 'dashboard.html';
+                    }
+                }
+            });
         });
     </script>
 </body>
 </html>
-
