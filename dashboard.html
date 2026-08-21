@@ -4,42 +4,80 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tradescrow - Dashboard</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    
-            listContainer.innerHTML = ""; 
-            
-            data.forEach(trade => {
-                const isBuyer = trade.buyer_email.toLowerCase() === activeUser.toLowerCase();
-                const roleBadge = isBuyer ? '<span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Buyer</span>' : '<span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Seller</span>';
-                
-                let statusBadge = '';
-                if(trade.status === 'pending') statusBadge = '<span class="text-yellow-500 font-medium">Awaiting Deposit</span>';
-                if(trade.status === 'paid') statusBadge = '<span class="text-green-400 font-medium animate-pulse">🔒 Escrow Locked</span>';
-                if(trade.status === 'released') statusBadge = '<span class="text-gray-400 font-medium">Settle Closed</span>';
-                if(trade.status === 'disputed') statusBadge = '<span class="text-red-400 font-bold">🛑 Disputed Order</span>';
+    <style>
+        @keyframes pop {
+            0% { transform: scale(0.95); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col antialiased selection:bg-yellow-500 selection:text-gray-950">
 
-                const card = document.createElement('div');
-                card.className = "bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-md hover:border-gray-600 transition cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4";
-                card.onclick = () => window.location.href = `room.html?id=${trade.id}`;
-                
-                card.innerHTML = `
-                    <div class="space-y-1">
-                        <div class="flex items-center gap-2">
-                            <h3 class="font-bold text-white text-sm">${trade.asset_type}</h3>
-                            ${roleBadge}
-                        </div>
-                        <p class="text-xs text-gray-400 font-mono break-all">Partner: ${isBuyer ? trade.seller_email : trade.buyer_email}</p>
-                    </div>
-                    <div class="flex sm:flex-col justify-between items-end w-full sm:w-auto border-t sm:border-0 border-gray-700/50 pt-2 sm:pt-0">
-                        <span class="text-sm font-bold text-green-400">₦${trade.amount.toLocaleString()}</span>
-                        <span class="text-xs">${statusBadge}</span>
-                    </div>
-                    <script>
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-gray-800 bg-gray-950/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <span class="text-xl font-black text-yellow-500 tracking-wider">TRADESCROW</span>
+                <span class="text-[10px] bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-2 py-0.5 rounded-full font-semibold">P2P Vault</span>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <span id="userBadge" class="text-xs text-gray-400 font-mono hidden sm:inline">Loading...</span>
+                <button onclick="handleLogout()" class="bg-gray-800 hover:bg-red-950/40 hover:text-red-400 border border-gray-700 hover:border-red-500/30 text-gray-300 text-xs px-3 py-1.5 rounded-xl transition">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-4xl mx-auto w-full px-4 py-6 flex-1 space-y-6">
+
+        <!-- Testimony Banner -->
+        <div id="testimonyBox" class="bg-gradient-to-r from-gray-800 to-gray-850 border border-gray-700/80 rounded-2xl p-4 shadow-lg flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <span id="testimonyEmoji" class="text-2xl">🤝</span>
+                <div>
+                    <p id="testimonyText" class="text-xs sm:text-sm font-medium text-gray-200">"Exchanged my IG page in 5 mins safely!"</p>
+                    <p id="testimonyAuthor" class="text-[10px] text-yellow-500 font-mono mt-0.5">- @chidi_crypto</p>
+                </div>
+            </div>
+            <span class="text-[10px] text-gray-500 font-semibold uppercase tracking-wider hidden sm:block">Community Feedback</span>
+        </div>
+
+        <!-- Dashboard Action Header -->
+        <div class="flex justify-between items-center pt-2">
+            <div>
+                <h1 class="text-lg font-bold text-white">Your Deal Rooms</h1>
+                <p class="text-xs text-gray-400">Manage ongoing escrow negotiations and account transfers</p>
+            </div>
+            <a href="create.html" class="bg-yellow-500 hover:bg-yellow-400 text-gray-950 font-bold text-xs px-4 py-2.5 rounded-xl shadow transition flex items-center gap-1.5">
+                <span>+</span> New Contract
+            </a>
+        </div>
+
+        <!-- Contracts List Container -->
+        <div id="contractsList" class="space-y-3">
+            <div class="text-center py-12 bg-gray-800/50 border border-gray-800 rounded-2xl">
+                <p class="text-xs text-gray-500 animate-pulse">Syncing active deal contracts...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- JavaScript Engine -->
+    <script>
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : window.supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let activeUser = null;
 
@@ -58,6 +96,7 @@
         const testimonyAuthor = document.getElementById('testimonyAuthor');
 
         function cycleTestimonials() {
+            if (!testimonyBox) return;
             testimonyBox.classList.remove('animate-pop');
             void testimonyBox.offsetWidth; // Force Reflow
             
@@ -83,7 +122,8 @@
             }
 
             activeUser = session.user.email;
-            document.getElementById('userBadge').textContent = activeUser;
+            const badge = document.getElementById('userBadge');
+            if (badge) badge.textContent = activeUser;
 
             fetchUserContracts();
         }
@@ -212,6 +252,6 @@
         }
 
         checkSecureAuth();
-                </script>
+    </script>
 </body>
 </html>
