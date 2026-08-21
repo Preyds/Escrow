@@ -122,7 +122,7 @@
         // Function to show preloader with custom text
         function showPreloader(msg = "Loading Tradescrow...") {
             if (preloader) {
-                preloaderText.innerText = msg;
+                preloaderText.textContent = msg;
                 preloader.style.display = 'flex';
                 preloader.classList.remove('opacity-0', 'pointer-events-none');
             }
@@ -260,7 +260,7 @@
 
             if (currentStep === 'email') {
                 authBtn.disabled = true;
-                authBtn.innerText = "Sending Code...";
+                authBtn.textContent = "Sending Code...";
 
                 const { error } = await supabaseClient.auth.signInWithOtp({ 
                     email: email,
@@ -272,19 +272,19 @@
                 if (error) {
                     alert("Error sending code: " + error.message);
                     authBtn.disabled = false;
-                    authBtn.innerText = "Send Secret Code →";
+                    authBtn.textContent = "Send Secret Code →";
                 } else {
                     emailSection.classList.add('hidden');
                     otpSection.classList.remove('hidden');
                     authBtn.disabled = false;
-                    authBtn.innerText = "Verify & Access Workspace →";
+                    authBtn.textContent = "Verify & Access Workspace →";
                     currentStep = 'otp';
                 }
 
             } else if (currentStep === 'otp') {
                 const token = document.getElementById('otpToken').value.trim();
                 authBtn.disabled = true;
-                authBtn.innerText = "Verifying Code...";
+                authBtn.textContent = "Verifying Code...";
 
                 const { data, error } = await supabaseClient.auth.verifyOtp({
                     email: email,
@@ -295,7 +295,7 @@
                 if (error) {
                     alert("Invalid or expired code. Please try again. " + error.message);
                     authBtn.disabled = false;
-                    authBtn.innerText = "Verify & Access Workspace →";
+                    authBtn.textContent = "Verify & Access Workspace →";
                 } else {
                     showPreloader("Access Granted! Loading Workspace...");
                     window.location.href = 'dashboard.html';
@@ -303,6 +303,5 @@
             }
         });
     </script>
-
 </body>
 </html>
