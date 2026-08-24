@@ -1,0 +1,15 @@
+{
+  "name": "Tradescrow Escrow Portal",
+  "short_name": "Tradescrow",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#eab308",
+  "icons": [
+    {
+      "src": "logo.webp",
+      "sizes": "512x512",
+      "type": "image/webp"
+    }
+  ]
+}
