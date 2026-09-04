@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-K4KF9NJZ74"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-K4KF9NJZ74"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
 
-  gtag('config', 'G-K4KF9NJZ74');
-</script>
+      gtag('config', 'G-K4KF9NJZ74');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tradescrow - P2P Gaming & Social Marketplace</title>
@@ -40,7 +40,7 @@
         </div>
     </nav>
 
-    <!-- Search & Filter Header Section (Batman Store Style) -->
+    <!-- Search & Filter Header Section -->
     <div class="max-w-5xl mx-auto px-4 mt-6">
         <div class="flex flex-col sm:flex-row gap-2">
             <div class="relative flex-1">
@@ -72,7 +72,7 @@
     <div id="filterModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-center items-center p-4">
         <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-sm p-5 space-y-4">
             <div class="flex justify-between items-center border-b border-gray-800 pb-2">
-                <h3 class="text-sm font-bold text-cyan-400">⚡ Filter Gaming Accounts</h3>
+                <h3 class="text-sm font-bold text-cyan-400">⚡ Filter Listings</h3>
                 <button onclick="toggleFilterModal()" class="text-gray-400 hover:text-white">✕</button>
             </div>
             <div class="space-y-3 text-xs">
@@ -81,7 +81,7 @@
                     <input type="number" id="filterMaxPrice" placeholder="e.g. 100000" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-2.5 text-white">
                 </div>
                 <div>
-                                       <label class="text-gray-400 font-medium block mb-1">Min Level (Gaming IDs)</label>
+                    <label class="text-gray-400 font-medium block mb-1">Min Level (Gaming IDs)</label>
                     <input type="number" id="filterMinLevel" placeholder="e.g. 50" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-2.5 text-white">
                 </div>
             </div>
@@ -91,7 +91,7 @@
             </div>
         </div>
     </div>
-
+    
     <!-- Main Marketplace Grid -->
     <main class="max-w-5xl mx-auto px-4 mt-6">
         <div id="listingsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -106,14 +106,14 @@
     <div id="listingModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex justify-center items-center p-4">
         <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md p-6 relative space-y-4 max-h-[90vh] overflow-y-auto">
             <div>
-                <h3 class="text-base font-bold text-white">List Your Gaming/Social Asset</h3>
+                <h3 class="text-base font-bold text-white">List Your Asset</h3>
                 <p class="text-xs text-gray-400">Reach buyers with detailed stats and items included.</p>
             </div>
 
             <form id="listingForm" onsubmit="handleCreateListing(event)" class="space-y-3.5 text-xs">
                 <div>
                     <label class="block text-gray-400 mb-1 font-medium">Asset Platform</label>
-                    <select id="assetPlatform" required class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
+                    <select id="assetPlatform" onchange="toggleFormFieldsByPlatform()" required class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
                         <option value="Free Fire">Free Fire ID</option>
                         <option value="Instagram">Instagram Page</option>
                         <option value="TikTok">TikTok Account</option>
@@ -123,24 +123,37 @@
                 </div>
 
                 <div>
-                    <label class="block text-gray-400 mb-1 font-medium">Short Title / Account Overview</label>
-                    <input type="text" id="assetTitle" placeholder="e.g., ALL EVO MAXX with 900 VAULT ITEMS" required class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
+                    <label class="block text-gray-400 mb-1 font-medium">Short Title / Overview</label>
+                    <input type="text" id="assetTitle" placeholder="e.g., 50k Active Fashion Page / EVO Max Free Fire" required class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <!-- GAMING DYNAMIC FIELDS -->
+                <div id="gamingFields" class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-gray-400 mb-1 font-medium">Account Level (Optional)</label>
+                        <label class="block text-gray-400 mb-1 font-medium">Account Level</label>
                         <input type="number" id="assetLevel" placeholder="e.g., 88" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-gray-400 mb-1 font-medium">Server / Region</label>
-                        <input type="text" id="assetServer" placeholder="e.g., Africa / Nigeria" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
+                        <input type="text" id="assetServer" placeholder="e.g., Africa / Global" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
+                    </div>
+                </div>
+
+                <!-- SOCIAL MEDIA DYNAMIC FIELDS -->
+                <div id="socialFields" class="grid grid-cols-2 gap-3 hidden">
+                    <div>
+                        <label class="block text-gray-400 mb-1 font-medium">Follower Count</label>
+                        <input type="number" id="assetFollowers" placeholder="e.g., 55000" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1 font-medium">Niche / Category</label>
+                        <input type="text" id="assetNiche" placeholder="e.g., Gaming, Fashion, Tech" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-gray-400 mb-1 font-medium">Rare Items / Highlights (Comma-separated)</label>
-                    <input type="text" id="assetTags" placeholder="e.g., S1, BALCK BUNNY, 3 RAI HAIR, HIGH LEVEL" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
+                    <label class="block text-gray-400 mb-1 font-medium">Highlights / Key Features (Comma-separated)</label>
+                    <input type="text" id="assetTags" placeholder="e.g., Verified Badge, High Engagement, S1 Bundles" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-white focus:border-yellow-500 outline-none">
                 </div>
 
                 <div>
@@ -171,12 +184,13 @@
             </form>
         </div>
     </div>
-        <!-- MODAL 2: Full-Screen Proof Image Lightbox -->
+     <!-- MODAL 2: Full-Screen Proof Image Lightbox -->
     <div id="imageLightboxModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex flex-col justify-center items-center p-4 cursor-pointer" onclick="closeImageLightbox()">
         <p class="text-xs text-gray-400 mb-2 font-mono">Click anywhere to close preview</p>
         <img id="lightboxImage" src="" class="max-w-full max-h-[85vh] rounded-2xl border border-gray-800 object-contain shadow-2xl">
     </div>
-        <script>
+
+    <script>
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -188,7 +202,6 @@
         function closeNewListingModal() { document.getElementById('listingModal').classList.add('hidden'); }
         function toggleFilterModal() { document.getElementById('filterModal').classList.toggle('hidden'); }
 
-        // Custom Safe Toast Notification System
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
@@ -219,6 +232,22 @@
         }
         function closeImageLightbox() {
             document.getElementById('imageLightboxModal').classList.add('hidden');
+        }
+
+        function toggleFormFieldsByPlatform() {
+            const platform = document.getElementById('assetPlatform').value;
+            const gamingFields = document.getElementById('gamingFields');
+            const socialFields = document.getElementById('socialFields');
+
+            const socialPlatforms = ['Instagram', 'TikTok', 'YouTube'];
+
+            if (socialPlatforms.includes(platform)) {
+                gamingFields.classList.add('hidden');
+                socialFields.classList.remove('hidden');
+            } else {
+                socialFields.classList.add('hidden');
+                gamingFields.classList.remove('hidden');
+            }
         }
 
         async function fetchMarketplaceListings() {
@@ -282,7 +311,6 @@
             renderGrid(rawListingsData);
             toggleFilterModal();
         }
-
         function renderGrid(data) {
             const gridContainer = document.getElementById('listingsGrid');
             gridContainer.textContent = "";
@@ -311,7 +339,6 @@
                 const card = document.createElement('div');
                 card.className = "bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden flex flex-col justify-between shadow-lg hover:border-gray-700 transition";
 
-                // Card Image Overlay Container
                 const imgContainer = document.createElement('div');
                 imgContainer.className = "h-48 w-full bg-gray-950 relative overflow-hidden border-b border-gray-800 group cursor-pointer";
                 imgContainer.onclick = () => openImageLightbox(displayImage);
@@ -322,7 +349,6 @@
                 img.className = "w-full h-full object-cover group-hover:scale-105 transition duration-300";
                 imgContainer.appendChild(img);
 
-                // Top Badges
                 const topBadges = document.createElement('div');
                 topBadges.className = "absolute top-2.5 left-2.5 flex items-center gap-1.5";
 
@@ -330,15 +356,10 @@
                 platformBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-yellow-500 text-gray-950 uppercase tracking-wider";
                 platformBadge.textContent = item.platform || 'Asset';
 
-                const premBadge = document.createElement('span');
-                premBadge.className = "text-[9px] font-bold px-2 py-0.5 rounded-md bg-purple-500/80 text-white uppercase";
-                premBadge.textContent = "Premium";
-
                 topBadges.appendChild(platformBadge);
-                topBadges.appendChild(premBadge);
                 imgContainer.appendChild(topBadges);
 
-                // Level Badge
+                // Stats Overlay Badge
                 if (item.level) {
                     const levelContainer = document.createElement('div');
                     levelContainer.className = "absolute bottom-2.5 right-2.5";
@@ -349,11 +370,20 @@
                     
                     levelContainer.appendChild(levelSpan);
                     imgContainer.appendChild(levelContainer);
+                } else if (item.followers) {
+                    const folContainer = document.createElement('div');
+                    folContainer.className = "absolute bottom-2.5 right-2.5";
+                    
+                    const folSpan = document.createElement('span');
+                    folSpan.className = "bg-purple-500/20 text-purple-400 border border-purple-500/30 font-bold px-2 py-0.5 rounded-md text-[10px]";
+                    folSpan.textContent = `${item.followers.toLocaleString()} Followers`;
+                    
+                    folContainer.appendChild(folSpan);
+                    imgContainer.appendChild(folContainer);
                 }
 
                 card.appendChild(imgContainer);
 
-                // Details Section
                 const details = document.createElement('div');
                 details.className = "p-4 space-y-2.5 flex-1 flex flex-col justify-between";
 
@@ -380,7 +410,6 @@
                 topDetails.appendChild(row1);
                 topDetails.appendChild(titleH4);
 
-                // Process rare item tags
                 if (item.tags) {
                     const tagsDiv = document.createElement('div');
                     tagsDiv.className = "flex flex-wrap gap-1 mt-2";
@@ -397,7 +426,6 @@
 
                 details.appendChild(topDetails);
 
-                // Actions & Escrow CTA
                 const ctaDiv = document.createElement('div');
                 ctaDiv.className = "pt-3 border-t border-gray-800 space-y-2";
 
@@ -419,20 +447,25 @@
                 gridContainer.appendChild(card);
             });
         }
-
         async function handleCreateListing(e) {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
             
             const platform = document.getElementById('assetPlatform').value;
             const title = document.getElementById('assetTitle').value;
-            const level = parseInt(document.getElementById('assetLevel').value) || null;
-            const server = document.getElementById('assetServer').value || 'Global';
             const tags = document.getElementById('assetTags').value || '';
             const price = parseFloat(document.getElementById('assetPrice').value);
             const contact = document.getElementById('assetContact').value;
             const email = document.getElementById('sellerEmail').value;
             const imageFile = document.getElementById('assetImage').files[0];
+
+            const socialPlatforms = ['Instagram', 'TikTok', 'YouTube'];
+            const isSocial = socialPlatforms.includes(platform);
+
+            const level = !isSocial ? (parseInt(document.getElementById('assetLevel').value) || null) : null;
+            const server = !isSocial ? (document.getElementById('assetServer').value || 'Global') : null;
+            const followers = isSocial ? (parseInt(document.getElementById('assetFollowers').value) || null) : null;
+            const niche = isSocial ? (document.getElementById('assetNiche').value || null) : null;
 
             if (imageFile && imageFile.size > 5 * 1024 * 1024) {
                 showToast("Image size must be less than 5MB", "error");
@@ -474,6 +507,8 @@
                     title: title, 
                     level: level,
                     server: server,
+                    followers: followers,
+                    niche: niche,
                     tags: tags,
                     price: price, 
                     contact_handle: contact, 
@@ -491,6 +526,7 @@
 
             showToast("Listing published successfully!", "success");
             document.getElementById('listingForm').reset();
+            toggleFormFieldsByPlatform();
             closeNewListingModal();
             fetchMarketplaceListings();
         }
@@ -527,6 +563,6 @@
         }
 
         fetchMarketplaceListings();            
-       </script>
+    </script>
 </body>
 </html>
