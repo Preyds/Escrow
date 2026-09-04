@@ -316,27 +316,55 @@
             toggleFilterModal();
         }
         function renderGrid(data) {
-            const gridContainer = document.getElementById('listingsGrid');
-            gridContainer.textContent = "";
+    const gridContainer = document.getElementById('listingsGrid');
+    if (!gridContainer) return;
+    gridContainer.textContent = "";
 
-            if (!data || data.length === 0) {
-                const emptyBox = document.createElement('div');
-                emptyBox.className = "text-center py-12 bg-gray-900 border border-gray-800 rounded-2xl col-span-full px-4";
+    if (!data || data.length === 0) {
+        const emptyBox = document.createElement('div');
+        emptyBox.className = "text-center py-12 bg-gray-900 border border-gray-800 rounded-2xl col-span-full px-4";
 
-                const p1 = document.createElement('p');
-                p1.className = "text-sm font-semibold text-gray-300";
-                p1.textContent = "No listings found";
+        const p1 = document.createElement('p');
+        p1.className = "text-sm font-semibold text-gray-300";
+        p1.textContent = "No listings found";
 
-                const p2 = document.createElement('p');
-                p2.className = "text-xs text-gray-500 mt-1";
-                p2.textContent = "Try resetting filters or post a new account!";
+        const p2 = document.createElement('p');
+        p2.className = "text-xs text-gray-500 mt-1";
+        p2.textContent = "Try resetting filters or post a new account!";
 
-                emptyBox.appendChild(p1);
-                emptyBox.appendChild(p2);
-                gridContainer.appendChild(emptyBox);
-                return;
-            }
+        emptyBox.appendChild(p1);
+        emptyBox.appendChild(p2);
+        gridContainer.appendChild(emptyBox);
+        return;
+    }
 
+    data.forEach((item) => {
+        try {
+            // Safe fallbacks for missing column names
+            const title = item.short_title || item.title || "Untitled Asset";
+            const price = item.price || item.price_ngn || 0;
+            const platform = item.platform || item.category || "Game Account";
+            const image = item.proof_screenshot || item.image_url || 'https://via.placeholder.com/300x180?text=No+Image';
+
+            const card = document.createElement('div');
+            card.className = "bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between";
+            card.innerHTML = `
+                <div>
+                    <img src="${image}" class="w-full h-40 object-cover rounded-xl mb-3" alt="${title}">
+                    <span class="text-xs bg-yellow-500/10 text-yellow-500 px-2.5 py-1 rounded-md font-semibold">${platform}</span>
+                    <h3 class="text-base font-bold text-white mt-2">${title}</h3>
+                </div>
+                <div class="mt-4 flex items-center justify-between pt-3 border-t border-gray-800">
+                    <span class="text-sm font-extrabold text-yellow-500">₦${Number(price).toLocaleString()}</span>
+                    <button onclick="window.location.href='room.html?id=${item.id}'" class="bg-yellow-500 hover:bg-yellow-400 text-gray-950 font-bold text-xs px-3 py-2 rounded-xl">Buy Now</button>
+                </div>
+            `;
+            gridContainer.appendChild(card);
+        } catch (err) {
+            console.error("Error rendering individual listing card:", err, item);
+        }
+    });
+}
             data.forEach(item => {
                 const displayImage = item.image_url ? item.image_url : 'https://images.unsplash.com/photo-1612287230202-1bf1d85d1bdf?w=500&auto=format&fit=crop&q=60';
                 
