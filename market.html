@@ -183,8 +183,8 @@
                 </div>
             </form>
         </div>
-    </div>
-     <!-- MODAL 2: Full-Screen Proof Image Lightbox -->
+        </div>
+        <!-- MODAL 2: Full-Screen Proof Image Lightbox -->
     <div id="imageLightboxModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex flex-col justify-center items-center p-4 cursor-pointer" onclick="closeImageLightbox()">
         <p class="text-xs text-gray-400 mb-2 font-mono">Click anywhere to close preview</p>
         <img id="lightboxImage" src="" class="max-w-full max-h-[85vh] rounded-2xl border border-gray-800 object-contain shadow-2xl">
@@ -193,7 +193,7 @@
     <script>
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let activeFilter = 'all';
         let rawListingsData = [];
@@ -251,47 +251,45 @@
         }
 
         async function fetchMarketplaceListings() {
-    const gridContainer = document.getElementById('listingsGrid');
-    if (!gridContainer) return;
+            const gridContainer = document.getElementById('listingsGrid');
+            if (!gridContainer) return;
 
-    // Show loading state
-    gridContainer.innerHTML = `
-        <div class="col-span-full text-center py-12">
-            <p class="text-sm font-semibold text-gray-400">Loading active marketplace listings...</p>
-        </div>`;
+            gridContainer.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <span class="animate-spin inline-block w-6 h-6 border-2 border-yellow-500 border-t-transparent rounded-full mb-2"></span>
+                    <p class="text-xs text-gray-400">Loading active marketplace listings...</p>
+                </div>`;
 
-    const sortVal = document.getElementById('sortOption')?.value || 'newest';
+            const sortVal = document.getElementById('sortOption')?.value || 'newest';
 
-    let query = supabaseClient.from('marketplace').select('*');
+            let query = window.supabaseClient.from('marketplace').select('*');
 
-    // Sorting
-    if (sortVal === 'price_asc') query = query.order('price', { ascending: true });
-    else if (sortVal === 'price_desc') query = query.order('price', { ascending: false });
-    else query = query.order('created_at', { ascending: false });
+            if (sortVal === 'price_asc') query = query.order('price', { ascending: true });
+            else if (sortVal === 'price_desc') query = query.order('price', { ascending: false });
+            else query = query.order('created_at', { ascending: false });
 
-    // Filter Logic: Only filter if a specific category is active (ignore "all")
-    const isAll = !activeFilter || 
-                  activeFilter.toLowerCase() === 'all' || 
-                  activeFilter.includes('All Gaming');
+            const isAll = !activeFilter || 
+                          activeFilter.toLowerCase() === 'all' || 
+                          activeFilter.includes('All Gaming');
 
-    if (!isAll) {
-        const cleanFilter = activeFilter.replace(' ID', '').trim();
-        query = query.or(`platform.ilike.%${cleanFilter}%,category.ilike.%${cleanFilter}%`);
-    }
+            if (!isAll) {
+                const cleanFilter = activeFilter.replace(' ID', '').trim();
+                query = query.or(`platform.ilike.%${cleanFilter}%,category.ilike.%${cleanFilter}%`);
+            }
 
-    const { data, error } = await query;
+            const { data, error } = await query;
 
-    if (error) {
-        console.error("Supabase Fetch Error:", error);
-        gridContainer.innerHTML = `
-            <div class="col-span-full bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center">
-                Database Error: ${error.message}
-            </div>`;
-        return;
-    }
+            if (error) {
+                console.error("Supabase Fetch Error:", error);
+                gridContainer.innerHTML = `
+                    <div class="col-span-full bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center">
+                        Database Error: ${error.message}
+                    </div>`;
+                return;
+            }
 
-    rawListingsData = data || [];
-    renderGrid(rawListingsData);
+            rawListingsData = data || [];
+            renderGrid(rawListingsData);
         }
         
         function handleSearch() {
@@ -327,58 +325,32 @@
             renderGrid(rawListingsData);
             toggleFilterModal();
         }
+
         function renderGrid(data) {
-    const gridContainer = document.getElementById('listingsGrid');
-    if (!gridContainer) return;
-    gridContainer.textContent = "";
+            const gridContainer = document.getElementById('listingsGrid');
+            if (!gridContainer) return;
+            gridContainer.textContent = "";
 
-    if (!data || data.length === 0) {
-        const emptyBox = document.createElement('div');
-        emptyBox.className = "text-center py-12 bg-gray-900 border border-gray-800 rounded-2xl col-span-full px-4";
+            if (!data || data.length === 0) {
+                const emptyBox = document.createElement('div');
+                emptyBox.className = "text-center py-12 bg-gray-900 border border-gray-800 rounded-2xl col-span-full px-4";
 
-        const p1 = document.createElement('p');
-        p1.className = "text-sm font-semibold text-gray-300";
-        p1.textContent = "No listings found";
+                const p1 = document.createElement('p');
+                p1.className = "text-sm font-semibold text-gray-300";
+                p1.textContent = "No listings found";
 
-        const p2 = document.createElement('p');
-        p2.className = "text-xs text-gray-500 mt-1";
-        p2.textContent = "Try resetting filters or post a new account!";
+                const p2 = document.createElement('p');
+                p2.className = "text-xs text-gray-500 mt-1";
+                p2.textContent = "Try resetting filters or post a new account!";
 
-        emptyBox.appendChild(p1);
-        emptyBox.appendChild(p2);
-        gridContainer.appendChild(emptyBox);
-        return;
-    }
+                emptyBox.appendChild(p1);
+                emptyBox.appendChild(p2);
+                gridContainer.appendChild(emptyBox);
+                return;
+            }
 
-    data.forEach((item) => {
-        try {
-            // Safe fallbacks for missing column names
-            const title = item.short_title || item.title || "Untitled Asset";
-            const price = item.price || item.price_ngn || 0;
-            const platform = item.platform || item.category || "Game Account";
-            const image = item.proof_screenshot || item.image_url || 'https://via.placeholder.com/300x180?text=No+Image';
-
-            const card = document.createElement('div');
-            card.className = "bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between";
-            card.innerHTML = `
-                <div>
-                    <img src="${image}" class="w-full h-40 object-cover rounded-xl mb-3" alt="${title}">
-                    <span class="text-xs bg-yellow-500/10 text-yellow-500 px-2.5 py-1 rounded-md font-semibold">${platform}</span>
-                    <h3 class="text-base font-bold text-white mt-2">${title}</h3>
-                </div>
-                <div class="mt-4 flex items-center justify-between pt-3 border-t border-gray-800">
-                    <span class="text-sm font-extrabold text-yellow-500">₦${Number(price).toLocaleString()}</span>
-                    <button onclick="window.location.href='room.html?id=${item.id}'" class="bg-yellow-500 hover:bg-yellow-400 text-gray-950 font-bold text-xs px-3 py-2 rounded-xl">Buy Now</button>
-                </div>
-            `;
-            gridContainer.appendChild(card);
-        } catch (err) {
-            console.error("Error rendering individual listing card:", err, item);
-        }
-    });
-}
             data.forEach(item => {
-                const displayImage = item.image_url ? item.image_url : 'https://images.unsplash.com/photo-1612287230202-1bf1d85d1bdf?w=500&auto=format&fit=crop&q=60';
+                const displayImage = item.image_url || item.proof_screenshot || 'https://images.unsplash.com/photo-1612287230202-1bf1d85d1bdf?w=500&auto=format&fit=crop&q=60';
                 
                 const card = document.createElement('div');
                 card.className = "bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden flex flex-col justify-between shadow-lg hover:border-gray-700 transition";
@@ -398,12 +370,11 @@
 
                 const platformBadge = document.createElement('span');
                 platformBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-yellow-500 text-gray-950 uppercase tracking-wider";
-                platformBadge.textContent = item.platform || 'Asset';
+                platformBadge.textContent = item.platform || item.category || 'Asset';
 
                 topBadges.appendChild(platformBadge);
                 imgContainer.appendChild(topBadges);
 
-                // Stats Overlay Badge
                 if (item.level) {
                     const levelContainer = document.createElement('div');
                     levelContainer.className = "absolute bottom-2.5 right-2.5";
@@ -420,12 +391,11 @@
                     
                     const folSpan = document.createElement('span');
                     folSpan.className = "bg-purple-500/20 text-purple-400 border border-purple-500/30 font-bold px-2 py-0.5 rounded-md text-[10px]";
-                    folSpan.textContent = `${item.followers.toLocaleString()} Followers`;
+                    folSpan.textContent = `${Number(item.followers).toLocaleString()} Followers`;
                     
                     folContainer.appendChild(folSpan);
                     imgContainer.appendChild(folContainer);
                 }
-
                 card.appendChild(imgContainer);
 
                 const details = document.createElement('div');
@@ -438,18 +408,18 @@
 
                 const idSpan = document.createElement('span');
                 idSpan.className = "text-[10px] text-gray-500 font-mono";
-                idSpan.textContent = `ID: ${item.id ? item.id.substring(0,8) : 'FF-STORE'}`;
+                idSpan.textContent = `ID: ${item.id ? String(item.id).substring(0,8) : 'FF-STORE'}`;
 
                 const priceSpan = document.createElement('span');
                 priceSpan.className = "text-sm font-extrabold text-cyan-400";
-                priceSpan.textContent = `₦${parseFloat(item.price || 0).toLocaleString()}`;
+                priceSpan.textContent = `₦${parseFloat(item.price || item.price_ngn || 0).toLocaleString()}`;
 
                 row1.appendChild(idSpan);
                 row1.appendChild(priceSpan);
 
                 const titleH4 = document.createElement('h4');
                 titleH4.className = "text-sm font-bold text-white leading-snug break-words";
-                titleH4.textContent = item.title || 'Untitled Asset';
+                titleH4.textContent = item.title || item.short_title || 'Untitled Asset';
 
                 topDetails.appendChild(row1);
                 topDetails.appendChild(titleH4);
@@ -491,6 +461,7 @@
                 gridContainer.appendChild(card);
             });
         }
+
         async function handleCreateListing(e) {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
@@ -526,7 +497,7 @@
                 const fileName = `${Math.random()}.${fileExt}`;
                 const filePath = `listings/${fileName}`;
 
-                const { error: uploadError } = await supabaseClient.storage
+                const { error: uploadError } = await window.supabaseClient.storage
                     .from('account-proofs')
                     .upload(filePath, imageFile);
 
@@ -537,14 +508,14 @@
                     return;
                 }
 
-                const { data: publicUrlData } = supabaseClient.storage
+                const { data: publicUrlData } = window.supabaseClient.storage
                     .from('account-proofs')
                     .getPublicUrl(filePath);
                 
                 imageUrl = publicUrlData.publicUrl;
             }
 
-            const { error } = await supabaseClient
+            const { error } = await window.supabaseClient
                 .from('marketplace')
                 .insert([{ 
                     platform: platform, 
@@ -608,15 +579,16 @@
 
         fetchMarketplaceListings();            
     </script>
+
     <!-- Tradescrow Footer -->
-<footer style="border-top: 1px solid #e5e7eb; padding: 24px 0; text-align: center; font-size: 14px; color: #4b5563; margin-top: 40px;">
-  <a href="dispute-policy.html" style="color: #2563eb; text-decoration: none; margin-right: 12px;">Dispute Policy</a>
-  <span>•</span>
-  <a href="terms-of-service.html" style="color: #2563eb; text-decoration: none; margin-left: 12px;">Terms of Service</a>
-</footer>
+    <footer style="border-top: 1px solid #e5e7eb; padding: 24px 0; text-align: center; font-size: 14px; color: #4b5563; margin-top: 40px;">
+      <a href="dispute-policy.html" style="color: #2563eb; text-decoration: none; margin-right: 12px;">Dispute Policy</a>
+      <span>•</span>
+      <a href="terms-of-service.html" style="color: #2563eb; text-decoration: none; margin-left: 12px;">Terms of Service</a>
+    </footer>
+
     <!-- Temporary Mobile Inspect Tool -->
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script><script>eruda.init();</script>
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
 </body>
 </html>
