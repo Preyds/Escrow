@@ -251,52 +251,49 @@
         }
 
         async function fetchMarketplaceListings() {
-            const gridContainer = document.getElementById('listingsGrid');
-            if (!gridContainer) return;
+    const gridContainer = document.getElementById('listingsGrid');
+    if (!gridContainer) return;
 
-            gridContainer.innerHTML = `
-                <div class="col-span-full text-center py-12">
-                    <span class="animate-spin inline-block w-6 h-6 border-2 border-yellow-500 border-t-transparent rounded-full mb-2"></span>
-                    <p class="text-xs text-gray-400">Loading active marketplace listings...</p>
-                </div>`;
+    gridContainer.innerHTML = `
+        <div class="col-span-full text-center py-12">
+            <span class="animate-spin inline-block w-6 h-6 border-2 border-yellow-500 border-t-transparent rounded-full mb-2"></span>
+            <p class="text-xs text-gray-400">Loading active marketplace listings...</p>
+        </div>`;
 
-            const sortVal = document.getElementById('sortOption')?.value || 'newest';
+    const sortVal = document.getElementById('sortOption')?.value || 'newest';
 
-            let query = window.supabaseClient
-    .from('marketplace')
-    .select('*')
-    .eq('status', 'available'); // <-- Only fetch unsold items
-            await window.supabaseClient
-    .from('marketplace')
-    .update({ status: 'sold' })
-    .eq('id', listingId);
-                      
-            if (sortVal === 'price_asc') query = query.order('price', { ascending: true });
-            else if (sortVal === 'price_desc') query = query.order('price', { ascending: false });
-            else query = query.order('created_at', { ascending: false });
+    // Fetch listings that are available or where status is null (fallback)
+    let query = window.supabaseClient
+        .from('marketplace')
+        .select('*')
+        .or('status.eq.available,status.is.null');
 
-            const isAll = !activeFilter || 
-                          activeFilter.toLowerCase() === 'all' || 
-                          activeFilter.includes('All Gaming');
+    if (sortVal === 'price_asc') query = query.order('price', { ascending: true });
+    else if (sortVal === 'price_desc') query = query.order('price', { ascending: false });
+    else query = query.order('created_at', { ascending: false });
 
-            if (!isAll) {
-                const cleanFilter = activeFilter.replace(' ID', '').trim();
-                query = query.or(`platform.ilike.%${cleanFilter}%,category.ilike.%${cleanFilter}%`);
-            }
+    const isAll = !activeFilter || 
+                  activeFilter.toLowerCase() === 'all' || 
+                  activeFilter.includes('All Gaming');
 
-            const { data, error } = await query;
+    if (!isAll) {
+        const cleanFilter = activeFilter.replace(' ID', '').trim();
+        query = query.or(`platform.ilike.%${cleanFilter}%,category.ilike.%${cleanFilter}%`);
+    }
 
-            if (error) {
-                console.error("Supabase Fetch Error:", error);
-                gridContainer.innerHTML = `
-                    <div class="col-span-full bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center">
-                        Database Error: ${error.message}
-                    </div>`;
-                return;
-            }
+    const { data, error } = await query;
 
-            rawListingsData = data || [];
-            renderGrid(rawListingsData);
+    if (error) {
+        console.error("Supabase Fetch Error:", error);
+        gridContainer.innerHTML = `
+            <div class="col-span-full bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center">
+                Database Error: ${error.message}
+            </div>`;
+        return;
+    }
+
+    rawListingsData = data || [];
+    renderGrid(rawListingsData);
         }
         async function deleteListing(listingId) {
     const confirmDelete = confirm("Are you sure you want to delete this listing?");
