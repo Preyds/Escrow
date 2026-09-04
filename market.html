@@ -604,7 +604,25 @@
             fetchMarketplaceListings();
         }
 
-        fetchMarketplaceListings();            
+        fetchMarketplaceListings();   
+        async function deleteListing(listingId) {
+    if (!listingId) return;
+
+    const confirmDelete = confirm("Are you sure you want to delete this listing from Tradescrow Store?");
+    if (!confirmDelete) return;
+
+    const { error } = await window.supabaseClient
+        .from('marketplace')
+        .delete()
+        .eq('id', listingId);
+
+    if (error) {
+        showToast("Failed to delete: " + error.message, "error");
+    } else {
+        showToast("Listing deleted successfully!", "success");
+        fetchMarketplaceListings(); // Refresh the list
+    }
+        }
     </script>
 
     <!-- Tradescrow Footer -->
