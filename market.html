@@ -260,7 +260,8 @@
             else if (sortVal === 'price_desc') query = query.order('price', { ascending: false });
             else query = query.order('created_at', { ascending: false });
 
-            if (activeFilter !== 'all') query = query.eq('platform', activeFilter);
+            if (activeFilter !== 'all') query = query.or(`platform.eq.${activeFilter},category.eq.${activeFilter}`);
+            
 
             const { data, error } = await query;
 
