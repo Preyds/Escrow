@@ -251,32 +251,32 @@
         }
 
         async function fetchMarketplaceListings() {
-            const gridContainer = document.getElementById('listingsGrid');
-            const sortVal = document.getElementById('sortOption').value;
+    const gridContainer = document.getElementById('listingsGrid');
+    const sortVal = document.getElementById('sortOption')?.value || 'newest';
 
-            let query = supabaseClient.from('marketplace').select('*');
-            
-            if (sortVal === 'price_asc') query = query.order('price', { ascending: true });
-            else if (sortVal === 'price_desc') query = query.order('price', { ascending: false });
-            else query = query.order('created_at', { ascending: false });
+    let query = supabaseClient.from('marketplace').select('*');
+    
+    if (sortVal === 'price_asc') query = query.order('price', { ascending: true });
+    else if (sortVal === 'price_desc') query = query.order('price', { ascending: false });
+    else query = query.order('created_at', { ascending: false });
 
-            if (activeFilter !== 'all') query = query.eq('platform', activeFilter);
+    // Handles 'all', 'All', or empty filter selections cleanly
+    if (activeFilter && activeFilter.toLowerCase() !== 'all' && activeFilter !== 'All Gaming & Social IDs') {
+        query = query.or(`platform.ilike.%${activeFilter}%,category.ilike.%${activeFilter}%`);
+    }
 
-            const { data, error } = await query;
+    const { data, error } = await query;
 
-            if (error) {
-                showToast("Database error: " + error.message, "error");
-                gridContainer.textContent = "";
-                const errDiv = document.createElement('div');
-                errDiv.className = "bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center col-span-full";
-                errDiv.textContent = `Database Sync Error: ${error.message}`;
-                gridContainer.appendChild(errDiv);
-                return;
-            }
+    if (error) {
+        console.error("Database Fetch Error:", error);
+        gridContainer.innerHTML = `<div class="p-4 text-center text-red-400 bg-red-500/10 rounded-xl">Error: ${error.message}</div>`;
+        return;
+    }
 
-            rawListingsData = data || [];
-            renderGrid(rawListingsData);
-        }
+    rawListingsData = data || [];
+    console.log("Fetched listings:", rawListingsData); // Check fetched data
+    renderGrid(rawListingsData);
+}
 
         function handleSearch() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
