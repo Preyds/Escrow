@@ -346,139 +346,147 @@
         }
 
         function renderGrid(data) {
-            const gridContainer = document.getElementById('listingsGrid');
-            if (!gridContainer) return;
-            gridContainer.textContent = "";
+    const gridContainer = document.getElementById('listingsGrid');
+    if (!gridContainer) return;
+    gridContainer.textContent = "";
 
-            if (!data || data.length === 0) {
-                const emptyBox = document.createElement('div');
-                emptyBox.className = "text-center py-12 bg-gray-900 border border-gray-800 rounded-2xl col-span-full px-4";
+    if (!data || data.length === 0) {
+        const emptyBox = document.createElement('div');
+        emptyBox.className = "text-center py-12 bg-gray-900 border border-gray-800 rounded-2xl col-span-full px-4";
 
-                const p1 = document.createElement('p');
-                p1.className = "text-sm font-semibold text-gray-300";
-                p1.textContent = "No listings found";
+        const p1 = document.createElement('p');
+        p1.className = "text-sm font-semibold text-gray-300";
+        p1.textContent = "No listings found";
 
-                const p2 = document.createElement('p');
-                p2.className = "text-xs text-gray-500 mt-1";
-                p2.textContent = "Try resetting filters or post a new account!";
+        const p2 = document.createElement('p');
+        p2.className = "text-xs text-gray-500 mt-1";
+        p2.textContent = "Try resetting filters or post a new account!";
 
-                emptyBox.appendChild(p1);
-                emptyBox.appendChild(p2);
-                gridContainer.appendChild(emptyBox);
-                return;
-            }
+        emptyBox.appendChild(p1);
+        emptyBox.appendChild(p2);
+        gridContainer.appendChild(emptyBox);
+        return;
+    }
 
-            data.forEach(item => {
-                const displayImage = item.image_url || item.proof_screenshot || 'https://images.unsplash.com/photo-1612287230202-1bf1d85d1bdf?w=500&auto=format&fit=crop&q=60';
-                
-                const card = document.createElement('div');
-                card.className = "bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden flex flex-col justify-between shadow-lg hover:border-gray-700 transition";
+    data.forEach(item => {
+        const displayImage = item.image_url || item.proof_screenshot || 'https://images.unsplash.com/photo-1612287230202-1bf1d85d1bdf?w=500&auto=format&fit=crop&q=60';
+        
+        const card = document.createElement('div');
+        card.className = "bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden flex flex-col justify-between shadow-lg hover:border-gray-700 transition relative";
 
-                const imgContainer = document.createElement('div');
-                imgContainer.className = "h-48 w-full bg-gray-950 relative overflow-hidden border-b border-gray-800 group cursor-pointer";
-                imgContainer.onclick = () => openImageLightbox(displayImage);
+        const imgContainer = document.createElement('div');
+        imgContainer.className = "h-48 w-full bg-gray-950 relative overflow-hidden border-b border-gray-800 group cursor-pointer";
+        imgContainer.onclick = () => openImageLightbox(displayImage);
 
-                const img = document.createElement('img');
-                img.src = displayImage;
-                img.alt = "Account Preview";
-                img.className = "w-full h-full object-cover group-hover:scale-105 transition duration-300";
-                imgContainer.appendChild(img);
+        const img = document.createElement('img');
+        img.src = displayImage;
+        img.alt = "Account Preview";
+        img.className = "w-full h-full object-cover group-hover:scale-105 transition duration-300";
+        imgContainer.appendChild(img);
 
-                const topBadges = document.createElement('div');
-                topBadges.className = "absolute top-2.5 left-2.5 flex items-center gap-1.5";
+        const topBadges = document.createElement('div');
+        topBadges.className = "absolute top-2.5 left-2.5 flex items-center gap-1.5";
 
-                const platformBadge = document.createElement('span');
-                platformBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-yellow-500 text-gray-950 uppercase tracking-wider";
-                platformBadge.textContent = item.platform || item.category || 'Asset';
+        const platformBadge = document.createElement('span');
+        platformBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-yellow-500 text-gray-950 uppercase tracking-wider";
+        platformBadge.textContent = item.platform || item.category || 'Asset';
 
-                topBadges.appendChild(platformBadge);
-                imgContainer.appendChild(topBadges);
+        topBadges.appendChild(platformBadge);
+        imgContainer.appendChild(topBadges);
 
-                if (item.level) {
-                    const levelContainer = document.createElement('div');
-                    levelContainer.className = "absolute bottom-2.5 right-2.5";
-                    
-                    const levelSpan = document.createElement('span');
-                    levelSpan.className = "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-bold px-2 py-0.5 rounded-md text-[10px]";
-                    levelSpan.textContent = `Lvl ${item.level}`;
-                    
-                    levelContainer.appendChild(levelSpan);
-                    imgContainer.appendChild(levelContainer);
-                } else if (item.followers) {
-                    const folContainer = document.createElement('div');
-                    folContainer.className = "absolute bottom-2.5 right-2.5";
-                    
-                    const folSpan = document.createElement('span');
-                    folSpan.className = "bg-purple-500/20 text-purple-400 border border-purple-500/30 font-bold px-2 py-0.5 rounded-md text-[10px]";
-                    folSpan.textContent = `${Number(item.followers).toLocaleString()} Followers`;
-                    
-                    folContainer.appendChild(folSpan);
-                    imgContainer.appendChild(folContainer);
-                }
-                card.appendChild(imgContainer);
+        if (item.level) {
+            const levelContainer = document.createElement('div');
+            levelContainer.className = "absolute bottom-2.5 right-2.5";
+            
+            const levelSpan = document.createElement('span');
+            levelSpan.className = "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-bold px-2 py-0.5 rounded-md text-[10px]";
+            levelSpan.textContent = `Lvl ${item.level}`;
+            
+            levelContainer.appendChild(levelSpan);
+            imgContainer.appendChild(levelContainer);
+        } else if (item.followers) {
+            const folContainer = document.createElement('div');
+            folContainer.className = "absolute bottom-2.5 right-2.5";
+            
+            const folSpan = document.createElement('span');
+            folSpan.className = "bg-purple-500/20 text-purple-400 border border-purple-500/30 font-bold px-2 py-0.5 rounded-md text-[10px]";
+            folSpan.textContent = `${Number(item.followers).toLocaleString()} Followers`;
+            
+            folContainer.appendChild(folSpan);
+            imgContainer.appendChild(folContainer);
+        }
 
-                const details = document.createElement('div');
-                details.className = "p-4 space-y-2.5 flex-1 flex flex-col justify-between";
+        card.appendChild(imgContainer);
 
-                const topDetails = document.createElement('div');
+        const details = document.createElement('div');
+        details.className = "p-4 space-y-2.5 flex-1 flex flex-col justify-between";
 
-                const row1 = document.createElement('div');
-                row1.className = "flex justify-between items-center mb-1";
+        const topDetails = document.createElement('div');
 
-                const idSpan = document.createElement('span');
-                idSpan.className = "text-[10px] text-gray-500 font-mono";
-                idSpan.textContent = `ID: ${item.id ? String(item.id).substring(0,8) : 'FF-STORE'}`;
+        const row1 = document.createElement('div');
+        row1.className = "flex justify-between items-center mb-1";
 
-                const priceSpan = document.createElement('span');
-                priceSpan.className = "text-sm font-extrabold text-cyan-400";
-                priceSpan.textContent = `₦${parseFloat(item.price || item.price_ngn || 0).toLocaleString()}`;
+        const idSpan = document.createElement('span');
+        idSpan.className = "text-[10px] text-gray-500 font-mono";
+        idSpan.textContent = `ID: ${item.id ? String(item.id).substring(0,8) : 'FF-STORE'}`;
 
-                row1.appendChild(idSpan);
-                row1.appendChild(priceSpan);
+        const priceSpan = document.createElement('span');
+        priceSpan.className = "text-sm font-extrabold text-cyan-400";
+        priceSpan.textContent = `₦${parseFloat(item.price || item.price_ngn || 0).toLocaleString()}`;
 
-                const titleH4 = document.createElement('h4');
-                titleH4.className = "text-sm font-bold text-white leading-snug break-words";
-                titleH4.textContent = item.title || item.short_title || 'Untitled Asset';
+        row1.appendChild(idSpan);
+        row1.appendChild(priceSpan);
 
-                topDetails.appendChild(row1);
-                topDetails.appendChild(titleH4);
+        const titleH4 = document.createElement('h4');
+        titleH4.className = "text-sm font-bold text-white leading-snug break-words";
+        titleH4.textContent = item.title || item.short_title || 'Untitled Asset';
 
-                if (item.tags) {
-                    const tagsDiv = document.createElement('div');
-                    tagsDiv.className = "flex flex-wrap gap-1 mt-2";
-                    const tagList = item.tags.split(',').slice(0, 4);
+        topDetails.appendChild(row1);
+        topDetails.appendChild(titleH4);
 
-                    tagList.forEach(t => {
-                        const tSpan = document.createElement('span');
-                        tSpan.className = "bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-[9px] font-semibold";
-                        tSpan.textContent = t.trim();
-                        tagsDiv.appendChild(tSpan);
-                    });
-                    topDetails.appendChild(tagsDiv);
-                }
+        if (item.tags) {
+            const tagsDiv = document.createElement('div');
+            tagsDiv.className = "flex flex-wrap gap-1 mt-2";
+            const tagList = item.tags.split(',').slice(0, 4);
 
-                details.appendChild(topDetails);
-
-                const ctaDiv = document.createElement('div');
-                ctaDiv.className = "pt-3 border-t border-gray-800 space-y-2";
-
-                const waBtn = document.createElement('button');
-                waBtn.className = "w-full bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-xl font-bold text-xs transition flex justify-center items-center gap-1.5 shadow-sm";
-                waBtn.textContent = "💬 BUY ON WHATSAPP";
-                waBtn.onclick = () => contactSeller(item.contact_handle, item.seller_email, item.platform, item.price, item.title);
-
-                const escrowLink = document.createElement('a');
-                escrowLink.className = "w-full block bg-gray-950 border border-gray-800 hover:bg-yellow-500 hover:text-gray-950 text-gray-300 text-center py-2 rounded-xl font-bold text-xs transition";
-                escrowLink.href = `create.html?seller=${encodeURIComponent(item.seller_email || '')}&amount=${encodeURIComponent(item.price || 0)}&type=${encodeURIComponent(item.platform || '')}`;
-                escrowLink.textContent = "🔒 Buy via Escrow Room";
-
-                ctaDiv.appendChild(waBtn);
-                ctaDiv.appendChild(escrowLink);
-                details.appendChild(ctaDiv);
-
-                card.appendChild(details);
-                gridContainer.appendChild(card);
+            tagList.forEach(t => {
+                const tSpan = document.createElement('span');
+                tSpan.className = "bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-[9px] font-semibold";
+                tSpan.textContent = t.trim();
+                tagsDiv.appendChild(tSpan);
             });
+            topDetails.appendChild(tagsDiv);
+        }
+
+        details.appendChild(topDetails);
+
+        const ctaDiv = document.createElement('div');
+        ctaDiv.className = "pt-3 border-t border-gray-800 space-y-2";
+
+        const waBtn = document.createElement('button');
+        waBtn.className = "w-full bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-xl font-bold text-xs transition flex justify-center items-center gap-1.5 shadow-sm";
+        waBtn.textContent = "💬 BUY ON WHATSAPP";
+        waBtn.onclick = () => contactSeller(item.contact_handle, item.seller_email, item.platform, item.price, item.title);
+
+        const escrowLink = document.createElement('a');
+        escrowLink.className = "w-full block bg-gray-950 border border-gray-800 hover:bg-yellow-500 hover:text-gray-950 text-gray-300 text-center py-2 rounded-xl font-bold text-xs transition";
+        escrowLink.href = `create.html?seller=${encodeURIComponent(item.seller_email || '')}&amount=${encodeURIComponent(item.price || 0)}&type=${encodeURIComponent(item.platform || '')}`;
+        escrowLink.textContent = "🔒 Buy via Escrow Room";
+
+        // DELETE BUTTON
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = "w-full bg-red-950/40 hover:bg-red-900/60 border border-red-800/50 text-red-400 py-1.5 rounded-xl font-bold text-xs transition flex justify-center items-center gap-1";
+        deleteBtn.textContent = "🗑️ Delete Listing";
+        deleteBtn.onclick = () => deleteListing(item.id);
+
+        ctaDiv.appendChild(waBtn);
+        ctaDiv.appendChild(escrowLink);
+        ctaDiv.appendChild(deleteBtn);
+        details.appendChild(ctaDiv);
+
+        card.appendChild(details);
+        gridContainer.appendChild(card);
+    });
         }
 
         async function handleCreateListing(e) {
