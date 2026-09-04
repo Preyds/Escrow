@@ -252,21 +252,29 @@
 
         async function fetchMarketplaceListings() {
     const gridContainer = document.getElementById('listingsGrid');
+    if (!gridContainer) return;
+
+    // Show loading state
+    gridContainer.innerHTML = `
+        <div class="col-span-full text-center py-12">
+            <p class="text-sm font-semibold text-gray-400">Loading active marketplace listings...</p>
+        </div>`;
+
     const sortVal = document.getElementById('sortOption')?.value || 'newest';
 
     let query = supabaseClient.from('marketplace').select('*');
-    
+
+    // Sorting
     if (sortVal === 'price_asc') query = query.order('price', { ascending: true });
     else if (sortVal === 'price_desc') query = query.order('price', { ascending: false });
     else query = query.order('created_at', { ascending: false });
 
-    // 1. Ignore filter if "All" is selected
-    const isAllFilter = !activeFilter || 
-                        activeFilter.toLowerCase() === 'all' || 
-                        activeFilter.includes('All Gaming');
+    // Filter Logic: Only filter if a specific category is active (ignore "all")
+    const isAll = !activeFilter || 
+                  activeFilter.toLowerCase() === 'all' || 
+                  activeFilter.includes('All Gaming');
 
-    // 2. Use case-insensitive partial matching (ilike) if a specific platform is tapped
-    if (!isAllFilter) {
+    if (!isAll) {
         const cleanFilter = activeFilter.replace(' ID', '').trim();
         query = query.or(`platform.ilike.%${cleanFilter}%,category.ilike.%${cleanFilter}%`);
     }
@@ -274,14 +282,18 @@
     const { data, error } = await query;
 
     if (error) {
-        console.error("Fetch error:", error);
+        console.error("Supabase Fetch Error:", error);
+        gridContainer.innerHTML = `
+            <div class="col-span-full bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs text-center">
+                Database Error: ${error.message}
+            </div>`;
         return;
     }
 
-    console.log("Returned rows from Supabase:", data);
     rawListingsData = data || [];
     renderGrid(rawListingsData);
         }
+        
         function handleSearch() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
             if (!searchTerm) {
