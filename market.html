@@ -262,8 +262,15 @@
 
             const sortVal = document.getElementById('sortOption')?.value || 'newest';
 
-            let query = window.supabaseClient.from('marketplace').select('*');
-
+            let query = window.supabaseClient
+    .from('marketplace')
+    .select('*')
+    .eq('status', 'available'); // <-- Only fetch unsold items
+            await window.supabaseClient
+    .from('marketplace')
+    .update({ status: 'sold' })
+    .eq('id', listingId);
+                      
             if (sortVal === 'price_asc') query = query.order('price', { ascending: true });
             else if (sortVal === 'price_desc') query = query.order('price', { ascending: false });
             else query = query.order('created_at', { ascending: false });
@@ -291,7 +298,22 @@
             rawListingsData = data || [];
             renderGrid(rawListingsData);
         }
-        
+        async function deleteListing(listingId) {
+    const confirmDelete = confirm("Are you sure you want to delete this listing?");
+    if (!confirmDelete) return;
+
+    const { error } = await window.supabaseClient
+        .from('marketplace')
+        .delete()
+        .eq('id', listingId);
+
+    if (error) {
+        alert("Failed to delete: " + error.message);
+    } else {
+        alert("Listing removed!");
+        fetchMarketplaceListings(); // Refresh grid
+    }
+        }
         function handleSearch() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
             if (!searchTerm) {
