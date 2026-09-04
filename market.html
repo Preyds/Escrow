@@ -255,18 +255,17 @@
     if (!gridContainer) return;
 
     gridContainer.innerHTML = `
-        <div class="col-span-full text-center py-12">
+        <div class="col-span-full text-center py-12 bg-gray-900 border border-gray-800 rounded-2xl">
             <span class="animate-spin inline-block w-6 h-6 border-2 border-yellow-500 border-t-transparent rounded-full mb-2"></span>
             <p class="text-xs text-gray-400">Loading active marketplace listings...</p>
         </div>`;
 
     const sortVal = document.getElementById('sortOption')?.value || 'newest';
 
-    // Fetch listings that are available or where status is null (fallback)
+    // Fetch listings from Supabase
     let query = window.supabaseClient
         .from('marketplace')
-        .select('*')
-        .or('status.eq.available,status.is.null');
+        .select('*');
 
     if (sortVal === 'price_asc') query = query.order('price', { ascending: true });
     else if (sortVal === 'price_desc') query = query.order('price', { ascending: false });
@@ -292,25 +291,10 @@
         return;
     }
 
-    rawListingsData = data || [];
-    renderGrid(rawListingsData);
-        }
-        async function deleteListing(listingId) {
-    const confirmDelete = confirm("Are you sure you want to delete this listing?");
-    if (!confirmDelete) return;
-
-    const { error } = await window.supabaseClient
-        .from('marketplace')
-        .delete()
-        .eq('id', listingId);
-
-    if (error) {
-        alert("Failed to delete: " + error.message);
-    } else {
-        alert("Listing removed!");
-        fetchMarketplaceListings(); // Refresh grid
-    }
-        }
+    // Notice the await here!
+    await renderGrid(data || []);
+}
+        
         function handleSearch() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
             if (!searchTerm) {
@@ -377,14 +361,23 @@
     });
         }
 
-async function renderGrid(data) {
-     gridContainer = document.getElementById('listingsGrid');
+        async function renderGrid(data) {
+    const gridContainer = document.getElementById('listingsGrid');
     if (!gridContainer) return;
     gridContainer.textContent = "";
 
-    // 1. Get current logged-in user
-    const { data: { user } } = await window.supabaseClient.auth.getUser();
-    const currentUserEmail = user ? user.email : localStorage.getItem('user_email'); // Fallback if using custom local state
+    // Safely retrieve user email without breaking rendering if unauthenticated
+    let currentUserEmail = localStorage.getItem('user_email') || '';
+    try {
+        if (window.supabaseClient?.auth) {
+            const { data: authData } = await window.supabaseClient.auth.getUser();
+            if (authData?.user?.email) {
+                currentUserEmail = authData.user.email;
+            }
+        }
+    } catch (e) {
+        console.warn("Auth check skipped:", e);
+    }
 
     if (!data || data.length === 0) {
         const emptyBox = document.createElement('div');
@@ -477,8 +470,11 @@ async function renderGrid(data) {
         ctaDiv.appendChild(waBtn);
         ctaDiv.appendChild(escrowLink);
 
-        // 2. ONLY SHOW DELETE BUTTON IF CURRENT USER IS THE SELLER
-        if (currentUserEmail && item.seller_email && currentUserEmail.toLowerCase() === item.seller_email.toLowerCase()) {
+        // ONLY SHOW DELETE BUTTON IF LOGGED-IN USER IS THE SELLER
+        const itemSeller = (item.seller_email || '').toLowerCase().trim();
+        const activeUser = (currentUserEmail || '').toLowerCase().trim();
+
+        if (activeUser && itemSeller && activeUser === itemSeller) {
             const deleteBtn = document.createElement('button');
             deleteBtn.className = "w-full bg-red-950/40 hover:bg-red-900/60 border border-red-800/50 text-red-400 py-1.5 rounded-xl font-bold text-xs transition flex justify-center items-center gap-1";
             deleteBtn.textContent = "🗑️ Delete My Listing";
@@ -490,35 +486,8 @@ async function renderGrid(data) {
         card.appendChild(details);
         gridContainer.appendChild(card);
     });
-}
-
-async function deleteListing(listingId, sellerEmail) {
-    const { data: { user } } = await window.supabaseClient.auth.getUser();
-    const currentUserEmail = user ? user.email : localStorage.getItem('user_email');
-
-    // Security Check
-    if (!currentUserEmail || currentUserEmail.toLowerCase() !== sellerEmail.toLowerCase()) {
-        showToast("Unauthorized: You can only delete your own listings.", "error");
-        return;
     }
-
-    const confirmDelete = confirm("Are you sure you want to delete this listing?");
-    if (!confirmDelete) return;
-
-    const { error } = await window.supabaseClient
-        .from('marketplace')
-        .delete()
-        .eq('id', listingId)
-        .eq('seller_email', currentUserEmail); // Extra verification parameter
-
-    if (error) {
-        showToast("Failed to delete: " + error.message, "error");
-    } else {
-        showToast("Listing deleted successfully!", "success");
-        fetchMarketplaceListings();
-    }
-        }
-        
+            
         function handleCreateListing(e) {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
