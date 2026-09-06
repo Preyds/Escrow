@@ -26,8 +26,6 @@
             animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
     </style>
-    <!-- Terms Acceptance Guard Script -->
-    <script src="terms-guard.js"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col antialiased selection:bg-yellow-500 selection:text-gray-950">
 
@@ -96,7 +94,10 @@
         </div>
     </footer>
 
-    <!-- JavaScript Engine -->
+    <!-- 1. Terms Acceptance Guard Script Loaded Here (After DOM & Supabase JS) -->
+    <script src="terms-guard.js"></script>
+
+    <!-- 2. Main JavaScript Engine -->
     <script>
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
