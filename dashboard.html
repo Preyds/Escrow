@@ -85,6 +85,35 @@
         </div>
     </main>
 
+    <!-- Terms & Dispute Policy Popup Modal -->
+    <div id="termsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col max-h-[85vh]">
+            <h2 class="text-lg font-bold text-yellow-500 mb-1">Terms of Service & Dispute Policy</h2>
+            <p class="text-xs text-gray-400 mb-4">Please scroll to the bottom of the agreement to accept and proceed to your dashboard.</p>
+            
+            <!-- Scrollable Agreement Container -->
+            <div id="termsBox" class="overflow-y-auto flex-1 bg-gray-950 p-4 rounded-xl border border-gray-800 text-xs text-gray-300 space-y-3 mb-4 select-none">
+                <h3 class="font-bold text-white text-sm">1. Escrow Protection Guidelines</h3>
+                <p>Tradescrow securely holds buyer funds until the seller completes asset handover. Once assets are handed over and verified, funds are released immediately.</p>
+                
+                <h3 class="font-bold text-white text-sm">2. Dispute Resolution Rules</h3>
+                <p>If a party fails to deliver or attempts to reclaim an account, a dispute must be initiated within 24 hours. Tradescrow admins will inspect submitted proof (chat logs, credential updates, account screenshots) to render a final binding verdict.</p>
+                
+                <h3 class="font-bold text-white text-sm">3. Prohibited Transactions</h3>
+                <p>Transactions involving illegal assets, unauthorized access tools, or stolen credentials are strictly prohibited and subject to account suspension and fund freezing.</p>
+
+                <div class="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-400 font-medium text-center">
+                    ✓ You have reached the bottom of the terms. You may now accept.
+                </div>
+            </div>
+
+            <!-- Acceptance Action Button -->
+            <button id="acceptTermsBtn" disabled onclick="confirmTermsAcceptance()" class="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-gray-950 font-bold rounded-xl opacity-50 cursor-not-allowed transition-all text-xs">
+                I Have Read & Accept Terms
+            </button>
+        </div>
+    </div>
+
     <!-- Tradescrow Footer -->
     <footer class="border-t border-gray-800 py-6 mt-10 text-center text-xs text-gray-500">
         <div class="max-w-4xl mx-auto flex justify-center items-center gap-3">
@@ -137,6 +166,38 @@
 
         setInterval(cycleTestimonials, 4000);
 
+        // --- Post-Auth Terms Modal Guard Engine ---
+        function checkPostAuthTerms(email) {
+            const hasAccepted = localStorage.getItem(`tradescrow_terms_${email}`);
+            
+            if (!hasAccepted) {
+                const modal = document.getElementById('termsModal');
+                const termsBox = document.getElementById('termsBox');
+                const acceptBtn = document.getElementById('acceptTermsBtn');
+                
+                modal.classList.remove('hidden');
+
+                const verifyScrollEnd = () => {
+                    const isAtBottom = termsBox.scrollTop + termsBox.clientHeight >= termsBox.scrollHeight - 10;
+                    if (isAtBottom) {
+                        acceptBtn.disabled = false;
+                        acceptBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                };
+
+                termsBox.addEventListener('scroll', verifyScrollEnd);
+                termsBox.addEventListener('touchmove', verifyScrollEnd);
+            }
+        }
+
+        function confirmTermsAcceptance() {
+            if (activeUser) {
+                localStorage.setItem(`tradescrow_terms_${activeUser}`, 'true');
+            }
+            const modal = document.getElementById('termsModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
         // --- Secure Session Check, Terms Check & Data Load Engine ---
         async function initDashboardSession() {
             const { data: { session }, error } = await supabaseClient.auth.getSession();
@@ -154,10 +215,8 @@
             const badge = document.getElementById('userBadge');
             if (badge) badge.textContent = activeUser;
 
-            // Run terms verification prompt if acceptance missing
-            if (typeof window.checkTermsAcceptance === 'function') {
-                await window.checkTermsAcceptance(activeUser);
-            }
+            // Trigger Terms & Dispute guard modal if user hasn't accepted yet
+            checkPostAuthTerms(activeUser);
 
             // Fetch active trade contracts
             fetchUserContracts();
