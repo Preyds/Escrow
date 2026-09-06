@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-K4KF9NJZ74"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-K4KF9NJZ74"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
 
-  gtag('config', 'G-K4KF9NJZ74');
-</script>
+      gtag('config', 'G-K4KF9NJZ74');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tradescrow - Dashboard</title>
@@ -26,8 +26,8 @@
             animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
     </style>
-    <!-- Inside <head> or right before </body> -->
-<script src="terms-guard.js"></script>
+    <!-- Terms Acceptance Guard Script -->
+    <script src="terms-guard.js"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col antialiased selection:bg-yellow-500 selection:text-gray-950">
 
@@ -42,8 +42,8 @@
         </div>
     </nav>
 
-    <!-- UPDATED: 3-Column Mobile App Navigation Bar -->
-    <div class="max-w-4xl mx-auto px-4 mt-6 grid grid-cols-3 gap-1.5 text-[11px] sm:text-xs">
+    <!-- 3-Column Mobile App Navigation Bar -->
+    <div class="max-w-4xl mx-auto px-4 mt-6 grid grid-cols-3 gap-1.5 text-[11px] sm:text-xs w-full">
         <a href="dashboard.html" class="bg-gray-800 border border-yellow-500/40 text-yellow-500 text-center py-2.5 rounded-xl font-bold shadow-md">
             💼 Escrow Trades
         </a>
@@ -56,7 +56,7 @@
     </div>
 
     <!-- Sequential Popping Testimony Panel Container -->
-    <div class="max-w-4xl mx-auto px-4 mt-6 h-[46px] flex justify-center items-center">
+    <div class="max-w-4xl mx-auto px-4 mt-6 h-[46px] flex justify-center items-center w-full">
         <div id="testimonyBox" class="bg-gray-800/40 border border-gray-700/50 rounded-xl px-5 py-2.5 text-xs flex items-center gap-2.5 w-full max-w-lg shadow-sm animate-pop">
             <span id="testimonyEmoji" class="text-base select-none">🤝</span>
             <p class="text-gray-300 flex-1 truncate">
@@ -65,6 +65,9 @@
             </p>
         </div>
     </div>
+
+    <!-- Main Dashboard Container -->
+    <main class="max-w-4xl mx-auto px-4 mt-6 flex-1 w-full space-y-4">
         <!-- Dashboard Action Header -->
         <div class="flex justify-between items-center pt-2">
             <div>
@@ -82,8 +85,16 @@
                 <p class="text-xs text-gray-500 animate-pulse">Syncing active deal contracts...</p>
             </div>
         </div>
-
     </main>
+
+    <!-- Tradescrow Footer -->
+    <footer class="border-t border-gray-800 py-6 mt-10 text-center text-xs text-gray-500">
+        <div class="max-w-4xl mx-auto flex justify-center items-center gap-3">
+            <a href="dispute-policy.html" class="text-gray-400 hover:text-yellow-500 transition">Dispute Policy</a>
+            <span>•</span>
+            <a href="terms-of-service.html" class="text-gray-400 hover:text-yellow-500 transition">Terms of Service</a>
+        </div>
+    </footer>
 
     <!-- JavaScript Engine -->
     <script>
@@ -125,8 +136,8 @@
 
         setInterval(cycleTestimonials, 4000);
 
-        // --- Secure Session Check & Data Load Engine ---
-        async function checkSecureAuth() {
+        // --- Secure Session Check, Terms Check & Data Load Engine ---
+        async function initDashboardSession() {
             const { data: { session }, error } = await supabaseClient.auth.getSession();
 
             if (error || !session) {
@@ -135,9 +146,19 @@
             }
 
             activeUser = session.user.email;
+            
+            // Cache active email for modal submit context fallback
+            localStorage.setItem('tradescrow_user_email', activeUser);
+
             const badge = document.getElementById('userBadge');
             if (badge) badge.textContent = activeUser;
 
+            // Run terms verification prompt if acceptance missing
+            if (typeof window.checkTermsAcceptance === 'function') {
+                await window.checkTermsAcceptance(activeUser);
+            }
+
+            // Fetch active trade contracts
             fetchUserContracts();
         }
 
@@ -261,36 +282,12 @@
 
         async function handleLogout() {
             await supabaseClient.auth.signOut();
+            localStorage.removeItem('tradescrow_user_email');
             window.location.href = 'index.html';
         }
 
-        checkSecureAuth();
-        async function initDashboardSession() {
-    // 1. Resolve active user email
-    const activeUser = localStorage.getItem('tradescrow_user_email') || 
-                       localStorage.getItem('userEmail') || 
-                       localStorage.getItem('email');
-
-    if (!activeUser) {
-        window.location.href = 'index.html';
-        return;
-    }
-
-    // 2. Run terms verification right after login/redirect to dashboard
-    await checkTermsAcceptance(activeUser);
-
-    // 3. Continue loading dashboard data (trades, balances, etc.)
-    loadDashboardData();
-}
-
-// Call on startup
-initDashboardSession();
+        // Initialize dashboard session on script load
+        initDashboardSession();
     </script>
-    <!-- Tradescrow Footer -->
-<footer style="border-top: 1px solid #e5e7eb; padding: 24px 0; text-align: center; font-size: 14px; color: #4b5563; margin-top: 40px;">
-  <a href="dispute-policy.html" style="color: #2563eb; text-decoration: none; margin-right: 12px;">Dispute Policy</a>
-  <span>•</span>
-  <a href="terms-of-service.html" style="color: #2563eb; text-decoration: none; margin-left: 12px;">Terms of Service</a>
-</footer>
 </body>
 </html>
