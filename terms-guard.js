@@ -107,4 +107,37 @@
         }
     };
 })();
+      document.addEventListener('DOMContentLoaded', async () => {
+  const modal = document.getElementById('terms-modal');
+  const termsBox = document.getElementById('terms-box');
+  const acceptBtn = document.getElementById('accept-terms-btn');
+
+  // 1. Verify user session state after sign-in/login
+  const userAccepted = localStorage.getItem('tradescrow_terms_accepted');
+
+  if (!userAccepted) {
+    // Show modal directly after authentication
+    modal.classList.remove('hidden');
+
+    // 2. Scroll detection for both mobile touch and desktop scroll events
+    const checkScroll = () => {
+      // Calculate scroll progress with a 10px threshold
+      const isAtBottom = termsBox.scrollTop + termsBox.clientHeight >= termsBox.scrollHeight - 10;
       
+      if (isAtBottom) {
+        acceptBtn.disabled = false;
+        acceptBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    };
+
+    termsBox.addEventListener('scroll', checkScroll);
+    termsBox.addEventListener('touchmove', checkScroll); // Smooth detection on mobile web browsers
+
+    // 3. Store user consent and grant access
+    acceptBtn.addEventListener('click', () => {
+      localStorage.setItem('tradescrow_terms_accepted', 'true');
+      modal.classList.add('hidden');
+    });
+  }
+});
+
