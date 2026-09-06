@@ -160,7 +160,6 @@
     <div id="lightbox" class="hidden fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-pointer" onclick="closeLightbox()">
         <img id="lightboxImg" src="" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain">
     </div>
-
     <script>
         const SUPABASE_URL = 'https://auxenvjsutqwuntfhsst.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1eGVudmpzdXRxd3VudGZoc3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzE1MjUsImV4cCI6MjA5NTEwNzUyNX0.ybdyD3MAMbHMeCK9Li6hbXQ9v7FtQVV4SblSxSrkxYI';
@@ -187,7 +186,7 @@
                 return;
             }
 
-            loadGlobalHistory();
+            await loadInitialMessages();
             listenToRealtimeChat();
         }
 
@@ -252,36 +251,36 @@
             return publicData.publicUrl;
         }
 
-        async function loadGlobalHistory() {
-            const chatBox = document.getElementById('globalChatWindow');
-            const { data, error } = await supabaseClient
+        async function loadInitialMessages() {
+            const chatContainer = document.getElementById('globalChatWindow');
+            
+            const { data: messages, error } = await supabaseClient
                 .from('global_messages')
                 .select(`
                     *,
-                    parent:global_messages!reply_to (
-                        sender_email,
-                        message_text
-                    )
+                    parent:global_messages!reply_to(sender_email, message_text)
                 `)
                 .order('created_at', { ascending: true })
-                .limit(70);
+                .limit(50);
 
             if (error) {
-                chatBox.textContent = "Error syncing messages: " + error.message;
+                console.error('Error loading history:', error);
                 return;
             }
 
-            chatBox.textContent = "";
-            if (data && data.length > 0) {
-                data.forEach(msg => renderMessageRow(msg));
+            chatContainer.innerHTML = '';
+            
+            if (messages && messages.length > 0) {
+                messages.forEach(msg => renderMessageRow(msg));
             } else {
                 const emptyMsg = document.createElement('p');
                 emptyMsg.className = "text-gray-600 text-xs text-center my-auto";
                 emptyMsg.textContent = "Welcome to the hub! Type a message below to start the conversation.";
-                chatBox.appendChild(emptyMsg);
+                chatContainer.appendChild(emptyMsg);
             }
-            chatBox.scrollTop = chatBox.scrollHeight;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
+
         function renderMessageRow(msg) {
             const chatBox = document.getElementById('globalChatWindow');
             if (chatBox.querySelector('.text-gray-600')) chatBox.textContent = "";
@@ -325,7 +324,8 @@
             if (msg.parent) {
                 const quoteDiv = document.createElement('div');
                 quoteDiv.className = "bg-gray-950/80 border-l-2 border-yellow-500 p-2 rounded text-[11px] text-gray-400 mb-1";
-                quoteDiv.innerHTML = `<span class="text-yellow-500 font-semibold">${msg.parent.sender_email.split('@')[0]}</span><p class="truncate text-gray-300">${msg.parent.message_text || 'Attachment'}</p>`;
+                const parentSender = msg.parent.sender_email ? msg.parent.sender_email.split('@')[0] : 'User';
+                quoteDiv.innerHTML = `<span class="text-yellow-500 font-semibold">${parentSender}</span><p class="truncate text-gray-300">${msg.parent.message_text || 'Attachment'}</p>`;
                 msgBubble.appendChild(quoteDiv);
             }
 
@@ -339,7 +339,7 @@
                 msgBubble.appendChild(imgEl);
             }
 
-            // Text Message Content (Safely injected as textContent)
+            // Text Message Content
             if (msg.message_text) {
                 const textPara = document.createElement('p');
                 textPara.className = "font-sans leading-relaxed break-all";
@@ -350,7 +350,6 @@
             chatBox.appendChild(msgBubble);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
-
         async function sendGlobalMessage(e) {
             e.preventDefault();
             const input = document.getElementById('globalInput');
@@ -420,30 +419,6 @@
                     }
                 });
         }
-        async function loadInitialMessages() {
-    const chatContainer = document.getElementById('chatContainer'); // replace with your message container ID
-    
-    // 1. Fetch past messages with parent reply details
-    const { data: messages, error } = await supabaseClient
-        .from('global_messages')
-        .select(`
-            *,
-            parent:global_messages!reply_to(sender_email, message_text)
-        `)
-        .order('created_at', { ascending: true })
-        .limit(50);
-
-    if (error) {
-        console.error('Error loading history:', error);
-        return;
-    }
-
-    // 2. Clear loader text and render each past message
-    chatContainer.innerHTML = '';
-    messages.forEach(msg => {
-        renderMessageRow(msg);
-    });
-        }
         
         function openLightbox(url) {
             document.getElementById('lightboxImg').src = url;
@@ -502,38 +477,6 @@
             loadActiveSession(data);
             fetchLobbySessions();
         }
-        async function createNewGameSession() {
-            const gameType = document.getElementById('gameTypeSelect').value;
-            const initialState = gameType === 'tictactoe' 
-                ? ["", "", "", "", "", "", "", "", ""] 
-                : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-
-            const { data, error } = await supabaseClient
-                .from('game_sessions')
-                .insert([{
-                    game_type: gameType,
-                    player_1: activeUser,
-                    player_2: null,
-                    current_turn: activeUser,
-                    game_state: initialState,
-                    status: 'waiting'
-                }])
-                .select()
-                .single();
-
-            if (error) {
-                alert("Could not create game: " + error.message);
-                return;
-            }
-
-            await supabaseClient.from('global_messages').insert([{
-                sender_email: '🎮 Game Bot',
-                message_text: `⚔️ ${activeUser} created a new ${gameType.toUpperCase()} challenge! Open Mini Games to join!`
-            }]);
-
-            loadActiveSession(data);
-            fetchLobbySessions();
-        }
 
         async function fetchLobbySessions() {
             const lobbyList = document.getElementById('lobbyGamesList');
@@ -549,7 +492,7 @@
                 return;
             }
 
-            const myActiveGame = data.find(g => g.player_1 === activeUser || g.player_2 === activeUser);
+            const myActiveGame = data ? data.find(g => g.player_1 === activeUser || g.player_2 === activeUser) : null;
             if (myActiveGame && (!currentSession || currentSession.id !== myActiveGame.id)) {
                 loadActiveSession(myActiveGame);
             }
@@ -607,7 +550,6 @@
                 lobbyList.appendChild(card);
             });
         }
-
         async function joinGameSession(gameId) {
             const { data, error } = await supabaseClient
                 .from('game_sessions')
@@ -792,7 +734,6 @@
                 chessBoardInstance.position(fen);
             }
         }
-
         function handleChessSquareTap(square) {
             if (!currentSession || currentSession.status !== 'active') return;
             if (currentSession.current_turn.toLowerCase() !== activeUser.toLowerCase()) return;
@@ -838,8 +779,9 @@
                 winnerUser = activeUser;
             } else if (chessGame.in_draw()) {
                 newStatus = 'finished';
-        }
-        const { data } = await supabaseClient
+            }
+
+            const { data } = await supabaseClient
                 .from('game_sessions')
                 .update({
                     game_state: newFen,
