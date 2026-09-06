@@ -420,7 +420,31 @@
                     }
                 });
         }
+        async function loadInitialMessages() {
+    const chatContainer = document.getElementById('chatContainer'); // replace with your message container ID
+    
+    // 1. Fetch past messages with parent reply details
+    const { data: messages, error } = await supabaseClient
+        .from('global_messages')
+        .select(`
+            *,
+            parent:global_messages!reply_to(sender_email, message_text)
+        `)
+        .order('created_at', { ascending: true })
+        .limit(50);
 
+    if (error) {
+        console.error('Error loading history:', error);
+        return;
+    }
+
+    // 2. Clear loader text and render each past message
+    chatContainer.innerHTML = '';
+    messages.forEach(msg => {
+        renderMessageRow(msg);
+    });
+        }
+        
         function openLightbox(url) {
             document.getElementById('lightboxImg').src = url;
             document.getElementById('lightbox').classList.remove('hidden');
